@@ -1,101 +1,102 @@
-jQuery(function ($) {
-  const url = new URL(window.location.href);
-  const userId = url.searchParams.get('userId');
-  const contactId = url.searchParams.get('contactId');
-  const webinar = $('#webinar').val() || '';
-  const TRACK_INTERVAL_MS = 15000; //Measured in ms
-
-  if (
-    contactId && userId &&
-    $.isNumeric(contactId) &&
-    $.isNumeric(userId)
-  ) {
-    window._wq = window._wq || [];
-    _wq.push({
-      _all: function (video) {
-        console.log("[Tracking] Wistia video is ready");
-
-        let lastSentPercent = 0;
-        let trackingInterval = null;
-        let sentFinal = false;
-
-        // ✅ Dynamically fetch correct resourceId from this specific video's element
-        const videoContainer = video.container;
-        const resourceId = videoContainer?.getAttribute('data-resource-id');
-
-        // Skip if no resourceId found on the video that triggered play
-        if (!resourceId || !$.isNumeric(resourceId)) {
-          console.warn('[Tracking] ⚠️ No valid data-resource-id on this video');
-          return;
-        }
-
-        function sendTrackingData(rawPercentWatched) {
-          const percentageWatched = Math.floor(rawPercentWatched * 1);
-          if (percentageWatched > 100) return;
-
-          console.log(`[Tracking] Sending data for video ${resourceId}: ${percentageWatched}% watched`);
-
-          $.ajax({
-            type: 'POST',
-            url: 'https://my.rapidfunnel.com/landing/resource/push-to-sqs',
-            dataType: 'json',
-            async: true,
-            data: {
-              resourceId: resourceId,
-              contactId: contactId,
-              userId: userId,
-              percentageWatched: percentageWatched,
-              mediaHash: video.hashedId(),
-              duration: video.duration(),
-              visitorKey: video.visitorKey(),
-              eventKey: video.eventKey(),
-              delayProcess: 1,
-              webinar: webinar,
-            },
-            success: function (response) {
-              console.log('[Tracking] ✅ POST succeeded', response);
-            },
-            error: function () {
-              console.warn('[Tracking] ❌ POST failed');
-            }
-          });
-        }
-
-        video.bind('play', function () {
-          console.log('[Tracking] ▶️ Video started');
-
-          sendTrackingData(video.percentWatched());
-
-          if (!trackingInterval) {
-            trackingInterval = setInterval(function () {
-              const percentWatched = video.percentWatched();
-              const floored = Math.floor(percentWatched * 100);
-
-              if (floored > lastSentPercent) {
-                lastSentPercent = floored;
-                sendTrackingData(percentWatched);
-              }
-            }, TRACK_INTERVAL_MS);
-          }
-        });
-
-        video.bind('pause', function () {
-          console.log('[Tracking] ⏸️ Video paused → stop tracking');
-          clearInterval(trackingInterval);
-          trackingInterval = null;
-        });
-
-        video.bind('end', function () {
-          console.log('[Tracking] ⏹️ Video ended → final 100% posted');
-          if (!sentFinal) {
-            sendTrackingData(1);
-            sentFinal = true;
-          }
-          clearInterval(trackingInterval);
-        });
-      }
-    });
-  } else {
-    console.warn('[Tracking] 💡 Missing or invalid userId/contactId');
+// Helper function for redirects
+function handleRedirect(url, target) {
+  if(url) { 
+    if (target === "_blank") {
+      window.open(url, '_blank');
+    } else {
+      window.location.href = url;
+    }
   }
+}
+
+// Get page name from document title
+const pageName = document.title || "Unknown Page";
+
+// Modified function to accept redirect parameters
+function sendNotification(user, firstName, lastName, phone, email, btnLocation, redirectUrl, target) {
+  // Make a POST request to notify the user via email
+  $.ajax({
+    url: 'https://app.rapidfunnel.com/api/mail/send-cta-email',
+    type: 'POST',
+    contentType: 'application/json',
+    dataType: "json",
+    data: JSON.stringify({
+      legacyUserId: user,
+      contactFirstName: firstName,
+      contactLastName: lastName,
+      contactPhoneNumber: phone,
+      contactEmail: email,
+      ctaLocation: btnLocation,
+      ctaPageName: pageName
+    }),
+    success: function (response) {
+      console.log('CTA notification sent successfully', response);
+      handleRedirect(redirectUrl, target);
+    },
+    error: function (xhr, status, error) {
+      console.error('CTA notification failed', error);
+      handleRedirect(redirectUrl, target);
+    }
+  });
+}
+
+jQuery(function ($) {
+  // Parse the current URL to get query parameters
+  const url = window.location.href;
+  const parsedUrl = new URL(url);
+  var userId = parsedUrl.searchParams.get('userId');
+  var resourceId = parsedUrl.searchParams.get('resourceId');
+  var contactId = parsedUrl.searchParams.get('contactId');
+  
+  $('[id^="ctaButton"]').on('click', function(event) {
+    event.preventDefault();
+    console.log("Clicked CTA Button: ", this.id);
+    
+    // Capture redirect properties HERE where 'this' is the button
+    var ctaButtonLocation = $(this).attr('data-description');
+    const redirectUrl = $(this).attr('href');
+    const target = $(this).attr('target');
+    
+    if(!ctaButtonLocation) {
+      ctaButtonLocation = $(this).attr('id');
+    }
+    if(contactId) {
+      $.get('https://apiv2.rapidfunnel.com/v2/contact-details/' + contactId)
+        .done(function (response) {
+          sendNotification(
+            Number(userId), 
+            response.data.firstName, 
+            response.data.lastName, 
+            response.data.phone, 
+            response.data.email, 
+            ctaButtonLocation,
+            redirectUrl,
+            target
+          );
+        })
+        .fail(function () {
+          sendNotification(
+            Number(userId), 
+            "System failed to answer", 
+            contactId, 
+            "N/A", 
+            "N/A", 
+            ctaButtonLocation,
+            redirectUrl,
+            target
+          );
+        });
+    } else {
+      sendNotification(
+        Number(userId), 
+        "No contact ID found", 
+        "N/A", 
+        "N/A", 
+        "N/A", 
+        ctaButtonLocation,
+        redirectUrl,
+        target
+      );                
+    }
+  });
 });
