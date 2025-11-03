@@ -36,7 +36,7 @@ This library provides six core JavaScript modules plus a master loader script:
 
 Add this single script tag to load all modules automatically:
 ```html
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/masterLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCode.js"></script>
 ```
 
 The master loader will:
