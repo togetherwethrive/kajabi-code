@@ -1,718 +1,577 @@
-# RapidFunnel Integration Scripts - Complete Documentation
+# Kajabi Code Library - Complete Documentation
 
-This README provides comprehensive documentation for all JavaScript tracking and integration scripts used in RapidFunnel landing pages.
+A comprehensive collection of JavaScript utilities for building interactive web pages with form handling, analytics tracking, user data management, and content delivery features.
 
 ---
 
-## Table of Contents
+## 📚 Table of Contents
 
 1. [Overview](#overview)
-2. [URL Parameters](#url-parameters)
-3. [User Data Loading Script](#1-user-data-loading-script)
-4. [CTA Tracking Buttons Script](#2-cta-tracking-buttons-script)
-5. [CTA Notification Buttons Script](#3-cta-notification-buttons-script)
-6. [Video Tracking Script](#4-video-tracking-script)
-7. [Asset Download Script](#5-asset-download-script)
-8. [Implementation Guide](#implementation-guide)
-9. [Troubleshooting](#troubleshooting)
+2. [Installation](#installation)
+3. [Script Descriptions](#script-descriptions)
+4. [Usage Examples](#usage-examples)
+5. [Configuration Reference](#configuration-reference)
+6. [API Endpoints](#api-endpoints)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Overview
 
-These scripts work together to provide:
-- Dynamic user profile data loading
-- CTA button click tracking with email notifications
-- Video engagement tracking (Wistia integration)
-- Asset download functionality with tracking
+This library provides six core JavaScript modules plus a master loader script:
 
-All scripts rely on URL parameters passed to the landing page for user and contact identification.
-
----
-
-## URL Parameters
-
-All scripts expect the following URL parameters:
-
-| Parameter | Required | Description | Example |
-|-----------|----------|-------------|---------|
-| `userId` | Yes | The user/agent ID | `?userId=12345` |
-| `contactId` | Optional | The contact/lead ID | `&contactId=67890` |
-| `resourceId` | Optional | Resource identifier | `&resourceId=111` |
-
-**Example URL:**
-```
-https://yourpage.com/landing?userId=12345&contactId=67890&resourceId=111
-```
+- **Form Validation & Contact Creation** - Two-step form submission with GDPR compliance
+- **CTA Button Tracking** - Click tracking with email notifications
+- **Button Tracking (Alternative)** - Advanced button tracking with resource management
+- **Asset Downloads** - Flexible file download handling
+- **Footer Automation** - Dynamic user profile data injection
+- **Video Tracking** - Wistia video engagement analytics
+- **Master Loader** - Automatic dependency management
 
 ---
 
-## 1. User Data Loading Script
+## Installation
 
-### Purpose
-Fetches user profile data from the RapidFunnel API and dynamically populates the landing page with personalized information.
+### Method 1: Master Loader (Recommended)
 
-### Features
-- Loads user profile image, name, email, phone number
-- Populates social media links
-- Handles custom booking links
-- Hides elements when data is unavailable
-
-### API Endpoint
-```
-GET https://apiv2.rapidfunnel.com/v2/users-details/{userId}
-```
-
-### HTML Element Mapping
-
-The script looks for HTML elements with IDs matching the API response keys:
-
+Add this single script tag to load all modules automatically:
 ```html
-<!-- Profile Information -->
-<img id="profileImage" src="" alt="Profile">
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/masterLoader.js"></script>
+```
+
+The master loader will:
+- Load jQuery if not present
+- Load all custom scripts in the correct order
+- Handle dependencies automatically
+
+### Method 2: Individual Scripts
+
+Load specific modules as needed:
+```html
+<!-- jQuery (required) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Individual modules -->
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/formValidation.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/contactForm.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/ctaButtonNotification.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/buttonTracking.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/assetDownload.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/footerAutomation.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/videoTracking.js"></script>
+```
+
+---
+
+## Script Descriptions
+
+### 1. Form Validation (`formValidation.js`)
+
+**Purpose**: First-stage validation script that enforces form requirements before contact creation.
+
+**Key Features**:
+- GDPR/CCPA consent validation (mandatory)
+- Email format validation
+- Required field checking
+- AJAX call interception to prevent premature submission
+- Defensive programming with multiple event capture methods
+- Comprehensive console logging for debugging
+
+**Security Features**:
+- Blocks all API calls until validation passes
+- Sets `window.VALIDATION_PASSED` flag
+- Prevents double submission
+- Validates GDPR checkbox explicitly
+
+**HTML Requirements**:
+```html
+<form id="contactForm">
+  <input type="text" id="contactFirstName" required />
+  <input type="text" id="contactLastName" required />
+  <input type="email" id="contactEmail" required />
+  <input type="tel" id="contactPhone" required />
+  <input type="checkbox" id="gdprConsent" required />
+  <div id="gdprError" class="error-message">GDPR consent required</div>
+  <button type="submit" id="contactFormSubmitBtn">Submit</button>
+</form>
+```
+
+---
+
+### 2. Contact Form (`contactForm.js`)
+
+**Purpose**: Second-stage script that creates contacts in RapidFunnel after validation passes.
+
+**Key Features**:
+- Only loads after validation succeeds
+- Creates contact via API
+- Handles redirects with URL parameters
+- Manages loading states (spinner, disabled button)
+- Form reset after success
+
+**Container Configuration**:
+```html
+<div id="contactFormContainer" 
+     data-campaign="YOUR_CAMPAIGN_ID"
+     data-label="YOUR_LABEL_ID"
+     data-redirect="https://yoursite.com/thank-you">
+  <!-- Form goes here -->
+</div>
+```
+
+**Workflow**:
+1. User submits form → `formValidation.js` runs
+2. If validation passes → `contactForm.js` loads dynamically
+3. Contact created via API
+4. User redirected with `userId`, `resourceId`, `contactId` parameters
+
+---
+
+### 3. CTA Button Notification (`ctaButtonNotification.js`)
+
+**Purpose**: Simple CTA tracking that sends email notifications when buttons are clicked.
+
+**Features**:
+- Sends notification emails on button click
+- Captures button location/description
+- Handles redirects after notification
+- Works with or without contact data
+
+**Button Markup**:
+```html
+<a href="https://destination.com" 
+   id="ctaButton1"
+   data-description="Download Free Guide"
+   target="_blank">
+  Click Here
+</a>
+```
+
+**How It Works**:
+1. Button clicked → Captures redirect URL and target
+2. Fetches contact details (if `contactId` in URL)
+3. Sends notification email
+4. Redirects user to intended destination
+
+---
+
+### 4. Button Tracking (`buttonTracking.js`)
+
+**Purpose**: Advanced CTA tracking with resource URL management and click tracking.
+
+**Features**:
+- Fetches resource URLs from API
+- Updates button hrefs dynamically
+- Tracks button clicks with email notifications
+- Prevents duplicate submissions
+- Graceful error handling
+
+**Button Markup**:
+```html
+<a href="#" 
+   id="ctaTrackingButton1"
+   data-cta-tracking-id="RESOURCE_ID"
+   data-cta-tracking-location="Hero Section"
+   target="_blank">
+  Get Started
+</a>
+```
+
+**Workflow**:
+1. Page loads → Fetches resource URLs for all tracking buttons
+2. Updates button `href` attributes with tracking URLs
+3. On click → Fetches contact data
+4. Sends tracking email
+5. Redirects to tracked URL
+
+---
+
+### 5. Asset Download (`assetDownload.js`)
+
+**Purpose**: Provides flexible file download handling with multiple methods.
+
+**Features**:
+- Simple link-based downloads
+- Fetch API downloads (for CORS files)
+- Automatic button state management
+- Multiple button selector support
+
+**Button Markup**:
+
+**Method 1 - Simple Download**:
+```html
+<button id="downloadButton1"
+        data-url="https://yoursite.com/file.pdf"
+        data-file-name="myfile.pdf">
+  Download PDF
+</button>
+```
+
+**Method 2 - Fetch API (for CORS)**:
+```html
+<button data-url="https://external-site.com/file.pdf"
+        data-file-name="document.pdf"
+        data-download-method="fetch">
+  Download
+</button>
+```
+
+**Initialization**: Automatic - finds buttons by ID prefix `downloadButton*` or any element with `data-url` attribute.
+
+---
+
+### 6. Footer Automation (`footerAutomation.js`)
+
+**Purpose**: Dynamically populates user profile information from API.
+
+**Features**:
+- Fetches user details from RapidFunnel API
+- Auto-populates profile image, name, email, phone
+- Manages social media links
+- Hides/shows elements based on data availability
+- Handles custom booking links
+
+**HTML Elements** (use matching IDs):
+```html
+<img id="profileImage" src="" alt="Profile" />
 <span id="firstName"></span>
 <span id="lastName"></span>
 <a id="email" href=""></a>
 <a id="phoneNumber" href=""></a>
+<a id="customBookingLink" href="">Book a Call</a>
 
-<!-- Alternative class-based selectors -->
-<span class="firstName"></span>
-<span class="lastName"></span>
+<!-- Social Links -->
+<a id="facebookUrl" href=""><i class="fa fa-facebook"></i></a>
+<a id="twitterUrl" href=""><i class="fa fa-twitter"></i></a>
+<a id="linkedinUrl" href=""><i class="fa fa-linkedin"></i></a>
+```
 
-<!-- Custom Booking Link -->
-<a id="customBookingLink" href=""></a>
-<a class="custom_custombookinglink" href=""></a>
-<div class="alternate-text">Shown when no booking link</div>
+**How It Works**:
+1. Extracts `userId` from URL parameters
+2. Fetches user data from API
+3. Populates matching element IDs with user data
+4. Hides social links if URLs not provided
+5. Triggers `customBookingLinkUpdated` event when ready
 
-<!-- Social Media Links -->
-<div class="footer-social-links">
-  <a id="facebookUrl" href=""></a>
-  <a id="twitterUrl" href=""></a>
-  <a id="linkedinUrl" href=""></a>
-  <a id="instagramUrl" href=""></a>
+---
+
+### 7. Video Tracking (`videoTracking.js`)
+
+**Purpose**: Tracks Wistia video engagement and sends analytics to RapidFunnel.
+
+**Features**:
+- Tracks watch percentage every 15 seconds
+- Sends data on play, pause, and end events
+- Supports multiple videos on one page
+- Requires `data-resource-id` on video container
+
+**Video Markup**:
+```html
+<div class="wistia_embed wistia_async_VIDEOID" 
+     data-resource-id="123">
 </div>
+<input type="hidden" id="webinar" value="optionalWebinarName" />
 ```
 
-### Behavior
+**Required URL Parameters**:
+- `userId` - User ID
+- `contactId` - Contact ID
 
-1. **Profile Image**: Sets `src` attribute, falls back to default icon if empty
-2. **Email**: Sets `href="mailto:..."` and displays email text
-3. **Phone Number**: Sets `href="tel:..."`, hides parent if empty
-4. **Custom Booking Link**: 
-   - Updates all elements with matching ID/class
-   - Hides alternate text when available
-   - Triggers `customBookingLinkUpdated` event
-5. **Social Links**: Hides links if URL not provided
-
-### Global Data Storage
-
-The script stores the custom booking link globally:
-```javascript
-window.sharedData.customBookingLink = userData.customBookingLink;
-```
-
-### Events Triggered
-
-```javascript
-// Custom event when booking link is updated
-$(document).trigger('customBookingLinkUpdated');
-```
+**Tracking Data Sent**:
+- Resource ID
+- Percentage watched
+- Video duration
+- Wistia visitor key
+- Event timestamp
 
 ---
 
-## 2. CTA Tracking Buttons Script
+## Usage Examples
 
-### Purpose
-Handles CTA buttons that require tracking URL generation and click tracking with email notifications.
-
-### Features
-- Dynamically generates tracking URLs from resource IDs
-- Sends click notification emails
-- Prevents duplicate submissions
-- Handles redirects (same window or new tab)
-- Graceful error handling
-
-### Button Configuration
-
-Buttons must have an ID starting with `ctaTrackingButton` and include data attributes:
-
+### Complete Contact Form Setup
 ```html
-<button 
-  id="ctaTrackingButton1"
-  data-cta-tracking-id="12345"
-  data-cta-tracking-location="Hero Section"
-  href="#"
-  target="_blank">
-  Click Here
-</button>
-```
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Load master script -->
+  <script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/masterLoader.js"></script>
+</head>
+<body>
 
-### Data Attributes
-
-| Attribute | Required | Description |
-|-----------|----------|-------------|
-| `id` | Yes | Must start with `ctaTrackingButton` |
-| `data-cta-tracking-id` | Yes | Resource ID for tracking URL |
-| `data-cta-tracking-location` | No | Description of button location |
-| `target` | No | `_blank` for new tab, omit for same window |
-
-### API Endpoints Used
-
-1. **Get Tracking URL:**
-```
-GET https://app.rapidfunnel.com/api/api/resources/resource-details/
-Parameters: userId, resourceId, contactId
-```
-
-2. **Get Contact Details:**
-```
-GET https://apiv2.rapidfunnel.com/v2/contact-details/{contactId}
-```
-
-3. **Send Notification Email:**
-```
-POST https://app.rapidfunnel.com/api/mail/send-cta-email
-Body: {
-  legacyUserId, contactFirstName, contactLastName,
-  contactPhoneNumber, contactEmail, ctaLocation, ctaPageName
-}
-```
-
-### Tracking URL Format
-
-Generated URL structure:
-```
-{resourceUrl}/{userId}/{contactId}
-```
-
-Example:
-```
-https://track.rapidfunnel.com/click/12345/67890
-```
-
-### Behavior Flow
-
-1. **On Page Load**: Fetches tracking URLs for all CTA tracking buttons
-2. **On Click**: 
-   - Prevents default action
-   - Checks for duplicate processing
-   - Fetches contact details (if contactId exists)
-   - Sends notification email
-   - Redirects to tracking URL
-
-### Error Handling
-
-- Disabled buttons or `#` hrefs are not processed
-- Failed API calls still allow redirect
-- 5-second timeout on contact details fetch
-- Buttons marked as disabled if tracking URL fetch fails
-
----
-
-## 3. CTA Notification Buttons Script
-
-### Purpose
-Handles simple CTA buttons that send email notifications without requiring tracking URL generation.
-
-### Features
-- Simpler than tracking buttons (no resource ID needed)
-- Sends email notification on click
-- Supports custom redirect URLs
-- Works with or without contact information
-
-### Button Configuration
-
-Buttons must have an ID starting with `ctaButton`:
-
-```html
-<button 
-  id="ctaButton1"
-  data-description="Download Brochure"
-  href="https://example.com/thank-you"
-  target="_blank">
-  Download Now
-</button>
-```
-
-### Data Attributes
-
-| Attribute | Required | Description |
-|-----------|----------|-------------|
-| `id` | Yes | Must start with `ctaButton` |
-| `data-description` | No | Button location/description (falls back to ID) |
-| `href` | Yes | Redirect URL after notification |
-| `target` | No | `_blank` for new tab |
-
-### API Endpoints Used
-
-1. **Get Contact Details:**
-```
-GET https://apiv2.rapidfunnel.com/v2/contact-details/{contactId}
-```
-
-2. **Send Notification Email:**
-```
-POST https://app.rapidfunnel.com/api/mail/send-cta-email
-```
-
-### Behavior Flow
-
-1. **On Click**:
-   - Prevents default action
-   - Fetches contact details (if contactId available)
-   - Sends notification email with contact info
-   - Redirects to specified URL
-
-### Fallback Behavior
-
-- If contactId missing: Sends notification with "No contact ID found"
-- If contact fetch fails: Sends notification with "System failed to answer"
-- Redirect happens regardless of email success/failure
-
----
-
-## 4. Video Tracking Script
-
-### Purpose
-Tracks video engagement on Wistia-embedded videos and sends viewing data to RapidFunnel.
-
-### Features
-- Tracks play, pause, and completion events
-- Sends periodic progress updates (every 15 seconds)
-- Prevents duplicate tracking
-- Supports multiple videos on same page
-- Each video can have its own resource ID
-
-### Requirements
-
-- Wistia video player embedded on page
-- Valid `userId` and `contactId` in URL
-- Each video container must have `data-resource-id` attribute
-
-### HTML Configuration
-
-```html
-<!-- Wistia video embed -->
-<div class="wistia_embed wistia_async_ABC123" 
-     data-resource-id="12345">
+<!-- Form Container -->
+<div id="contactFormContainer"
+     data-campaign="12345"
+     data-label="67890"
+     data-redirect="https://yoursite.com/thank-you">
+  
+  <form id="contactForm">
+    <input type="text" id="contactFirstName" placeholder="First Name" required />
+    <input type="text" id="contactLastName" placeholder="Last Name" required />
+    <input type="email" id="contactEmail" placeholder="Email" required />
+    <input type="tel" id="contactPhone" placeholder="Phone" required />
+    
+    <label>
+      <input type="checkbox" id="gdprConsent" required />
+      I agree to GDPR and CCPA Terms
+    </label>
+    <div id="gdprError" class="error-message">You must agree to continue</div>
+    
+    <label>
+      <input type="checkbox" id="marketingConsent" />
+      Send me marketing emails
+    </label>
+    
+    <button type="submit" id="contactFormSubmitBtn">
+      <span class="btn-text">Submit</span>
+      <span class="spinner" style="display:none;">⏳</span>
+    </button>
+  </form>
+  
 </div>
 
-<!-- Optional: Hidden webinar field -->
-<input type="hidden" id="webinar" value="Spring 2024 Webinar">
-```
-
-### Configuration
-
-```javascript
-const TRACK_INTERVAL_MS = 15000; // Send updates every 15 seconds
-```
-
-### API Endpoint
-
-```
-POST https://my.rapidfunnel.com/landing/resource/push-to-sqs
-```
-
-### Payload Structure
-
-```javascript
-{
-  resourceId: "12345",
-  contactId: "67890",
-  userId: "11111",
-  percentageWatched: 25,    // 0-100
-  mediaHash: "ABC123",      // Wistia video ID
-  duration: 120,            // Video duration in seconds
-  visitorKey: "...",        // Wistia visitor key
-  eventKey: "...",          // Wistia event key
-  delayProcess: 1,
-  webinar: "Spring 2024"    // Optional
-}
-```
-
-### Tracking Events
-
-1. **On Play**: 
-   - Sends initial tracking data
-   - Starts interval tracking every 15 seconds
-   
-2. **During Playback**:
-   - Checks progress every 15 seconds
-   - Sends update if percentage increased
-   
-3. **On Pause**:
-   - Stops interval tracking
-   
-4. **On End**:
-   - Sends final 100% tracking
-   - Stops all tracking
-
-### Validation
-
-Script only activates if:
-- `contactId` is present and numeric
-- `userId` is present and numeric
-- Video has valid `data-resource-id` attribute
-
-### Multiple Videos
-
-Each video independently tracks its own resource ID:
-```html
-<div class="wistia_embed wistia_async_VIDEO1" data-resource-id="101"></div>
-<div class="wistia_embed wistia_async_VIDEO2" data-resource-id="102"></div>
-<div class="wistia_embed wistia_async_VIDEO3" data-resource-id="103"></div>
+</body>
+</html>
 ```
 
 ---
 
-## 5. Asset Download Script
-
-### Purpose
-Enables asset downloads through buttons with automatic tracking and configuration via data attributes.
-
-### Features
-- Configurable via HTML data attributes
-- Supports multiple download buttons
-- Two download methods (simple & fetch)
-- Shows loading state during download
-- Automatic button detection
-
-### Button Configuration
-
-#### Method 1: ID Prefix
-Buttons with ID starting with `downloadButton`:
-
+### CTA Button with Tracking
 ```html
-<button 
-  id="downloadButton1"
-  data-url="https://example.com/assets/guide.pdf"
-  data-file-name="marketing-guide.pdf"
-  data-download-method="simple">
-  Download Guide
-</button>
+<!-- Option 1: Simple Notification -->
+<a href="https://yourproduct.com/buy" 
+   id="ctaButton1"
+   data-description="Purchase Button - Hero Section"
+   target="_blank">
+  Buy Now
+</a>
+
+<!-- Option 2: Advanced Tracking -->
+<a href="#" 
+   id="ctaTrackingButton1"
+   data-cta-tracking-id="456"
+   data-cta-tracking-location="Pricing Section">
+  Start Free Trial
+</a>
 ```
 
-#### Method 2: Data Attribute
-Any button with `data-url` attribute:
+---
 
+### Download Button
 ```html
-<button 
-  id="my-custom-id"
-  data-url="https://example.com/assets/template.zip"
-  data-file-name="template.zip">
+<!-- PDF Download -->
+<button id="downloadButton1"
+        data-url="https://yoursite.com/ebook.pdf"
+        data-file-name="free-ebook.pdf">
+  Download Free Ebook
+</button>
+
+<!-- Excel File with Fetch Method -->
+<button data-url="https://cdn.example.com/template.xlsx"
+        data-file-name="template.xlsx"
+        data-download-method="fetch">
   Download Template
 </button>
 ```
 
-### Data Attributes
+---
 
-| Attribute | Required | Description | Default |
-|-----------|----------|-------------|---------|
-| `data-url` | Yes | URL of asset to download | - |
-| `data-file-name` | No | Filename to save as | `"download"` |
-| `data-download-method` | No | `"simple"` or `"fetch"` | `"simple"` |
-
-### Download Methods
-
-#### Simple Method (Default)
-- Direct download using anchor element
-- Works for direct file URLs
-- Fast and straightforward
-- Best for public, direct-access files
-
+### Video Tracking Setup
 ```html
-data-download-method="simple"
-```
+<!-- Wistia Video -->
+<script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 
-#### Fetch Method
-- Uses Fetch API for more control
-- Better error handling
-- Shows console feedback
-- Useful for CORS-enabled resources
+<div class="wistia_responsive_padding">
+  <div class="wistia_responsive_wrapper">
+    <div class="wistia_embed wistia_async_abc123xyz" 
+         data-resource-id="789">
+    </div>
+  </div>
+</div>
 
-```html
-data-download-method="fetch"
-```
-
-### Behavior
-
-1. **Button Detection**: Automatically finds all download buttons on page load
-2. **On Click**:
-   - Prevents default action
-   - Shows "Downloading..." text
-   - Disables button
-   - Initiates download
-   - Restores button state
-
-### Error Handling
-
-- Missing `data-url`: Shows alert and logs error
-- Download failure (fetch method): Shows alert to user
-- Console logs for debugging
-
-### Multiple Downloads
-
-You can have unlimited download buttons on a single page:
-
-```html
-<button id="downloadButton1" data-url="..." data-file-name="file1.pdf">File 1</button>
-<button id="downloadButton2" data-url="..." data-file-name="file2.zip">File 2</button>
-<button id="downloadButton3" data-url="..." data-file-name="file3.docx">File 3</button>
-```
-
-### Module Export
-
-The script can be used as a module:
-
-```javascript
-const { downloadAsset, downloadAssetWithFetch, initDownload } = require('./download-script');
+<!-- Optional webinar identifier -->
+<input type="hidden" id="webinar" value="Q1_Product_Launch" />
 ```
 
 ---
 
-## Implementation Guide
+## Configuration Reference
 
-### Step 1: Include jQuery (if using jQuery-based scripts)
+### URL Parameters
 
-```html
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+All scripts expect these URL parameters:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `userId` | Yes | RapidFunnel user ID |
+| `contactId` | Optional | Contact ID (for tracking) |
+| `resourceId` | Optional | Resource ID (for forms) |
+
+**Example URL**:
+```
+https://yourpage.com?userId=12345&resourceId=67890&contactId=11223
 ```
 
-### Step 2: Add Script Files
+---
 
-```html
-<!-- User Data Loading -->
-<script src="path/to/user-data-loader.js"></script>
+### Form Validation Settings
 
-<!-- CTA Tracking -->
-<script src="path/to/cta-tracking.js"></script>
+| Setting | Location | Description |
+|---------|----------|-------------|
+| Campaign ID | `data-campaign` | RapidFunnel campaign ID |
+| Label ID | `data-label` | Contact tag/label ID |
+| Redirect URL | `data-redirect` | Post-submission redirect |
 
-<!-- CTA Notifications -->
-<script src="path/to/cta-notifications.js"></script>
+---
 
-<!-- Video Tracking -->
-<script src="path/to/video-tracking.js"></script>
+### Button Tracking Settings
 
-<!-- Asset Downloads -->
-<script src="path/to/asset-download.js"></script>
+| Attribute | Purpose | Example |
+|-----------|---------|---------|
+| `data-cta-tracking-id` | Resource ID for tracking | `"456"` |
+| `data-cta-tracking-location` | Button location description | `"Hero CTA"` |
+| `data-description` | Alternative location field | `"Download Section"` |
+
+---
+
+### Video Tracking Settings
+
+| Setting | Purpose | Default |
+|---------|---------|---------|
+| `TRACK_INTERVAL_MS` | Tracking frequency | 15000 (15s) |
+| `data-resource-id` | Resource identifier | Required |
+
+---
+
+## API Endpoints
+
+### Contact Creation
+```
+POST https://my.rapidfunnel.com/landing/resource/create-custom-contact
+```
+**Parameters**: `firstName`, `lastName`, `email`, `phone`, `campaign`, `contactTag`, `resourceId`, `senderId`, `sentFrom`
+
+### User Details
+```
+GET https://apiv2.rapidfunnel.com/v2/users-details/{userId}
 ```
 
-### Step 3: Set Up HTML Elements
-
-#### User Profile Elements
-```html
-<div class="profile-section">
-  <img id="profileImage" src="" alt="Profile">
-  <h1><span class="firstName"></span> <span class="lastName"></span></h1>
-  <a id="email" href=""></a>
-  <a id="phoneNumber" href=""></a>
-  <a id="customBookingLink" href="">Book Appointment</a>
-</div>
+### Contact Details
+```
+GET https://apiv2.rapidfunnel.com/v2/contact-details/{contactId}
 ```
 
-#### CTA Tracking Buttons
-```html
-<button 
-  id="ctaTrackingButton1"
-  data-cta-tracking-id="12345"
-  data-cta-tracking-location="Hero CTA"
-  target="_blank">
-  Get Started
-</button>
+### Resource Details
 ```
-
-#### CTA Notification Buttons
-```html
-<button 
-  id="ctaButton1"
-  data-description="Footer Contact"
-  href="/thank-you">
-  Contact Us
-</button>
+GET https://app.rapidfunnel.com/api/api/resources/resource-details/
 ```
+**Parameters**: `userId`, `resourceId`, `contactId`
 
-#### Video Elements
-```html
-<div class="wistia_embed wistia_async_ABC123" 
-     data-resource-id="12345"
-     style="width:640px;height:360px;">
-</div>
-<input type="hidden" id="webinar" value="Q1 2024 Training">
+### CTA Tracking Email
 ```
-
-#### Download Buttons
-```html
-<button 
-  id="downloadButton1"
-  data-url="https://example.com/guide.pdf"
-  data-file-name="complete-guide.pdf">
-  Download Guide
-</button>
+POST https://app.rapidfunnel.com/api/mail/send-cta-email
 ```
+**Body**: `legacyUserId`, `contactFirstName`, `contactLastName`, `contactPhoneNumber`, `contactEmail`, `ctaLocation`, `ctaPageName`
 
-### Step 4: Test Your Implementation
-
-1. **Check Console Logs**: All scripts output detailed console logs
-2. **Verify URL Parameters**: Ensure userId and contactId are in URL
-3. **Test Each Button Type**: Click through all CTAs and downloads
-4. **Watch Video Tracking**: Play videos and check console for tracking events
+### Video Tracking
+```
+POST https://my.rapidfunnel.com/landing/resource/push-to-sqs
+```
+**Parameters**: `resourceId`, `contactId`, `userId`, `percentageWatched`, `mediaHash`, `duration`, `visitorKey`, `eventKey`, `delayProcess`, `webinar`
 
 ---
 
 ## Troubleshooting
 
-### User Data Not Loading
+### Form Issues
 
-**Problem**: Profile data isn't appearing on the page
+**Problem**: Form submits without validation
+- ✅ Ensure `formValidation.js` loads before `contactForm.js`
+- ✅ Check console for AJAX interception messages
+- ✅ Verify GDPR checkbox has `id="gdprConsent"`
 
-**Solutions**:
-- ✅ Verify `userId` is in the URL and is numeric
-- ✅ Check that HTML element IDs match API response keys exactly
-- ✅ Look for CORS errors in console
-- ✅ Confirm API endpoint is accessible
+**Problem**: Contact not created
+- ✅ Check `data-campaign` attribute is valid
+- ✅ Verify validation passes (check console logs)
+- ✅ Ensure `userId` is in URL
 
-### CTA Buttons Not Working
-
-**Problem**: Clicking CTA buttons does nothing
-
-**Solutions**:
-- ✅ Ensure button ID starts with `ctaTrackingButton` or `ctaButton`
-- ✅ Check that required data attributes are present
-- ✅ Verify `href` attribute is set (even if just `"#"`)
-- ✅ Look for JavaScript errors in console
-- ✅ Confirm contactId is in URL (for tracking buttons)
-
-### Video Tracking Not Firing
-
-**Problem**: Video plays but no tracking data sent
-
-**Solutions**:
-- ✅ Verify both `userId` and `contactId` are in URL and numeric
-- ✅ Check that video container has `data-resource-id` attribute
-- ✅ Ensure Wistia script is loaded before tracking script
-- ✅ Look for console warnings about missing parameters
-- ✅ Check network tab for API request failures
-
-### Downloads Not Starting
-
-**Problem**: Download buttons don't trigger downloads
-
-**Solutions**:
-- ✅ Verify button has `data-url` attribute OR ID starts with `downloadButton`
-- ✅ Check that URL is accessible and CORS-enabled (for fetch method)
-- ✅ Try switching between `simple` and `fetch` methods
-- ✅ Look for console errors
-- ✅ Test URL directly in browser
-
-### General Debugging Tips
-
-1. **Open Browser Console**: All scripts log their activity
-2. **Check Network Tab**: See API requests and responses
-3. **Verify URL Parameters**: Use `console.log` to check parsed values
-4. **Test with Valid IDs**: Use known-good userId and contactId values
-5. **Disable Ad Blockers**: May interfere with tracking scripts
-6. **Check CORS Settings**: Ensure APIs allow requests from your domain
-
-### Console Log Messages
-
-Each script outputs specific console messages:
-
-```javascript
-// User Data Loader
-"User ID: 12345"
-"Resource ID: 111"
-"Contact ID: 67890"
-"userdata: {...}"
-
-// CTA Tracking
-"Download script initialized successfully! Found 3 download button(s)."
-"CTA Tracking email sent successfully"
-
-// Video Tracking
-"[Tracking] Wistia video is ready"
-"[Tracking] ▶️ Video started"
-"[Tracking] Sending data for video 12345: 25% watched"
-"[Tracking] ✅ POST succeeded"
-
-// Asset Downloads
-"Download script initialized successfully! Found 2 download button(s)."
-"Downloading asset..."
-"Download completed!"
-```
+**Problem**: No redirect after submission
+- ✅ Validate `data-redirect` URL format
+- ✅ Check URL parameters are appended correctly
 
 ---
 
-## Best Practices
+### Button Tracking Issues
 
-### 1. URL Parameters
-Always include userId and contactId in your landing page URLs:
-```
-https://yourpage.com?userId=12345&contactId=67890
-```
+**Problem**: Buttons don't track clicks
+- ✅ Verify button ID starts with `ctaButton` or `ctaTrackingButton`
+- ✅ Check `data-cta-tracking-id` exists (for buttonTracking.js)
+- ✅ Ensure `userId` is in URL
 
-### 2. Button Naming
-Use consistent, descriptive button IDs:
-```html
-<!-- Good -->
-<button id="ctaTrackingButton_hero">...</button>
-<button id="ctaButton_footer_contact">...</button>
-<button id="downloadButton_guide">...</button>
-
-<!-- Avoid -->
-<button id="ctaTrackingButton1">...</button>
-<button id="btn2">...</button>
-```
-
-### 3. Data Attributes
-Always provide descriptive data attributes:
-```html
-<button 
-  data-cta-tracking-location="Homepage Hero Section"
-  data-description="Main call-to-action button">
-```
-
-### 4. Error Handling
-Monitor console logs in production to catch issues early.
-
-### 5. Testing
-Test with both valid and invalid/missing URL parameters to ensure graceful degradation.
+**Problem**: Redirect doesn't work
+- ✅ Check `href` attribute is set correctly
+- ✅ Verify `target` attribute if using `_blank`
 
 ---
 
-## API Reference Summary
+### Video Tracking Issues
 
-### User Details API
-```
-GET https://apiv2.rapidfunnel.com/v2/users-details/{userId}
-Response: { data: [{ firstName, lastName, email, phoneNumber, profileImage, ... }] }
-```
+**Problem**: Video tracking not working
+- ✅ Ensure `contactId` and `userId` are in URL
+- ✅ Verify `data-resource-id` is on video container
+- ✅ Check Wistia API is loaded
+- ✅ Confirm values are numeric
 
-### Contact Details API
-```
-GET https://apiv2.rapidfunnel.com/v2/contact-details/{contactId}
-Response: { data: { firstName, lastName, email, phone, ... } }
-```
+**Problem**: Multiple videos tracking to same resource
+- ✅ Each video needs unique `data-resource-id`
 
-### Resource Details API
-```
-GET https://app.rapidfunnel.com/api/api/resources/resource-details/
-Params: { userId, resourceId, contactId }
-Response: { data: { resourceUrl, ... } }
-```
+---
 
-### CTA Notification API
-```
-POST https://app.rapidfunnel.com/api/mail/send-cta-email
-Body: { legacyUserId, contactFirstName, contactLastName, contactPhoneNumber, 
-        contactEmail, ctaLocation, ctaPageName }
-```
+### Footer Automation Issues
 
-### Video Tracking API
-```
-POST https://my.rapidfunnel.com/landing/resource/push-to-sqs
-Body: { resourceId, contactId, userId, percentageWatched, mediaHash, 
-        duration, visitorKey, eventKey, delayProcess, webinar }
-```
+**Problem**: Profile data not populating
+- ✅ Check `userId` is in URL
+- ✅ Verify element IDs match API field names
+- ✅ Check browser console for API errors
+
+**Problem**: Social links not showing
+- ✅ Ensure user has social URLs in RapidFunnel
+- ✅ Element IDs must match: `facebookUrl`, `twitterUrl`, etc.
+
+---
+
+### Download Issues
+
+**Problem**: Download button doesn't work
+- ✅ Verify `data-url` attribute exists
+- ✅ Check file URL is accessible
+- ✅ Try `data-download-method="fetch"` for CORS issues
+
+---
+
+## Console Logging
+
+All scripts include comprehensive console logging:
+
+- **Form Validation**: `═══ VALIDATION...` messages with detailed field checks
+- **Contact Creation**: `=== API REQUEST...` with payload details
+- **Button Tracking**: Click events and API calls
+- **Video Tracking**: `[Tracking]` prefixed messages
+
+**Enable detailed logs**: Open browser Developer Tools (F12) → Console tab
+
+---
+
+## Browser Compatibility
+
+- ✅ Chrome 80+
+- ✅ Firefox 75+
+- ✅ Safari 13+
+- ✅ Edge 80+
+
+**Requirements**:
+- JavaScript enabled
+- Cookies enabled (for Wistia tracking)
+- jQuery 3.7.1+ (auto-loaded by masterLoader)
 
 ---
 
@@ -720,25 +579,18 @@ Body: { resourceId, contactId, userId, percentageWatched, mediaHash,
 
 For issues or questions:
 1. Check console logs for error messages
-2. Review this documentation
-3. Verify all prerequisites are met
-4. Contact RapidFunnel support with:
-   - Browser console logs
-   - Network tab screenshots
-   - URL parameters being used
-   - Specific error messages
+2. Verify configuration attributes
+3. Test with simple HTML example
+4. Contact RapidFunnel support with console logs
 
 ---
 
 ## Version History
 
-**v1.0** - Initial documentation
-- User data loading
-- CTA tracking and notifications
-- Video tracking (Wistia)
-- Asset downloads
+- **v1.0** - Initial release with all core modules
+- Hosted on GitHub: `togetherwethrive/kajabi-code@main`
 
 ---
 
-**Last Updated**: 2024
-**Maintained By**: RapidFunnel Development Team
+**Last Updated**: 2025
+**Maintained By**: Together We Thrive Development Team
