@@ -36,7 +36,7 @@ This library provides six core JavaScript modules plus a master loader script:
 
 Add this single script tag to load all modules automatically:
 ```html
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/masterLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCode.js"></script>
 ```
 
 The master loader will:
@@ -188,33 +188,55 @@ Load specific modules as needed:
 
 ### 5. Asset Download (`assetDownload.js`)
 
-**Purpose**: Provides flexible file download handling with multiple methods.
+**Purpose**: Provides flexible file download handling with contact tracking and email notifications.
 
 **Features**:
 - Simple link-based downloads
 - Fetch API downloads (for CORS files)
 - Automatic button state management
+- Contact details fetching from API
+- Download tracking with email notifications
+- Integration with RapidFunnel tracking system
 - Multiple button selector support
+
+**How It Works**:
+1. User clicks download button
+2. Fetches contact details from API (if `contactId` in URL)
+3. Sends download tracking notification email
+4. Proceeds with file download
 
 **Button Markup**:
 
-**Method 1 - Simple Download**:
+**Method 1 - Simple Download with Tracking**:
 ```html
 <button id="downloadButton1"
         data-url="https://yoursite.com/file.pdf"
-        data-file-name="myfile.pdf">
+        data-file-name="myfile.pdf"
+        data-download-location="Hero Section Download">
   Download PDF
 </button>
 ```
 
-**Method 2 - Fetch API (for CORS)**:
+**Method 2 - Fetch API with Tracking (for CORS)**:
 ```html
 <button data-url="https://external-site.com/file.pdf"
         data-file-name="document.pdf"
-        data-download-method="fetch">
+        data-download-method="fetch"
+        data-download-location="Resource Library - Template Download">
   Download
 </button>
 ```
+
+**Required Attributes**:
+- `data-url` - File URL to download (required)
+- `data-file-name` - Name for downloaded file (optional, defaults to 'download')
+- `data-download-location` - Location identifier for tracking (optional, falls back to button ID)
+- `data-download-method` - Download method: "simple" or "fetch" (optional, defaults to "simple")
+
+**URL Parameters** (for tracking):
+- `userId` - RapidFunnel user ID (required for tracking)
+- `contactId` - Contact ID (optional, enables full contact detail tracking)
+- `resourceId` - Resource ID (optional)
 
 **Initialization**: Automatic - finds buttons by ID prefix `downloadButton*` or any element with `data-url` attribute.
 
@@ -356,20 +378,30 @@ Load specific modules as needed:
 
 ---
 
-### Download Button
+### Download Button with Tracking
 ```html
-<!-- PDF Download -->
+<!-- PDF Download with Location Tracking -->
 <button id="downloadButton1"
         data-url="https://yoursite.com/ebook.pdf"
-        data-file-name="free-ebook.pdf">
+        data-file-name="free-ebook.pdf"
+        data-download-location="Landing Page - Free Ebook">
   Download Free Ebook
 </button>
 
-<!-- Excel File with Fetch Method -->
+<!-- Excel File with Fetch Method and Tracking -->
 <button data-url="https://cdn.example.com/template.xlsx"
         data-file-name="template.xlsx"
-        data-download-method="fetch">
+        data-download-method="fetch"
+        data-download-location="Resources Section - Excel Template">
   Download Template
+</button>
+
+<!-- Image Download with Tracking -->
+<button id="downloadButton2"
+        data-url="https://yoursite.com/infographic.png"
+        data-file-name="infographic.png"
+        data-download-location="Blog Post - Infographic Download">
+  Download Infographic
 </button>
 ```
 
@@ -472,6 +504,8 @@ POST https://app.rapidfunnel.com/api/mail/send-cta-email
 ```
 **Body**: `legacyUserId`, `contactFirstName`, `contactLastName`, `contactPhoneNumber`, `contactEmail`, `ctaLocation`, `ctaPageName`
 
+**Note**: This endpoint is also used by `assetDownload.js` to track download events
+
 ### Video Tracking
 ```
 POST https://my.rapidfunnel.com/landing/resource/push-to-sqs
@@ -545,6 +579,17 @@ POST https://my.rapidfunnel.com/landing/resource/push-to-sqs
 - ✅ Verify `data-url` attribute exists
 - ✅ Check file URL is accessible
 - ✅ Try `data-download-method="fetch"` for CORS issues
+
+**Problem**: Download tracking not working
+- ✅ Ensure `userId` is in URL parameters
+- ✅ Check `data-download-location` attribute is set (optional but recommended)
+- ✅ Verify console for API errors
+- ✅ Confirm jQuery is loaded before assetDownload.js
+
+**Problem**: Contact details not tracked
+- ✅ Verify `contactId` is in URL parameters
+- ✅ Check console for contact API errors
+- ✅ Downloads will still work even if tracking fails
 
 ---
 

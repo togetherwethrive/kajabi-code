@@ -30,7 +30,7 @@ jQuery(function ($) {
         }
 
         function sendTrackingData(rawPercentWatched) {
-          const percentageWatched = Math.floor(rawPercentWatched * 1);
+          const percentageWatched = Math.floor(rawPercentWatched * 100);
           if (percentageWatched > 100) return;
 
           console.log(`[Tracking] Sending data for video ${resourceId}: ${percentageWatched}% watched`);
