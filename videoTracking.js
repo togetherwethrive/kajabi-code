@@ -49,7 +49,7 @@
             return 0;
           }
 
-          const percentage = (currentTime / duration) * 100;
+          const percentage = (currentTime / duration) * 1;
           console.log(`[Tracking] 📊 currentTime=${currentTime.toFixed(2)}s, duration=${duration.toFixed(2)}s, calculated=${percentage.toFixed(2)}%`);
           return percentage;
         }
