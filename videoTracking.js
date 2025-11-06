@@ -29,11 +29,26 @@ jQuery(function ($) {
           return;
         }
 
-        function sendTrackingData(rawPercentWatched) {
-          const percentageWatched = Math.floor(rawPercentWatched * 100);
-          if (percentageWatched > 100) return;
+        // Calculate percentage based on current time and duration
+        function getCurrentPercentage() {
+          const currentTime = video.time();
+          const duration = video.duration();
 
-          console.log(`[Tracking] Sending data for video ${resourceId}: ${percentageWatched}% watched`);
+          if (!duration || duration === 0) {
+            console.warn('[Tracking] ⚠️ Duration is 0 or undefined');
+            return 0;
+          }
+
+          const percentage = (currentTime / duration) * 100;
+          console.log(`[Tracking] 📊 currentTime=${currentTime.toFixed(2)}s, duration=${duration.toFixed(2)}s, calculated=${percentage.toFixed(2)}%`);
+          return percentage;
+        }
+
+        function sendTrackingData(percentageWatched) {
+          const percentToSend = Math.floor(percentageWatched);
+          if (percentToSend > 100) return;
+
+          console.log(`[Tracking] Sending data for video ${resourceId}: ${percentToSend}% watched`);
 
           $.ajax({
             type: 'POST',
@@ -44,7 +59,7 @@ jQuery(function ($) {
               resourceId: resourceId,
               contactId: contactId,
               userId: userId,
-              percentageWatched: percentageWatched,
+              percentageWatched: percentToSend,
               mediaHash: video.hashedId(),
               duration: video.duration(),
               visitorKey: video.visitorKey(),
@@ -64,18 +79,21 @@ jQuery(function ($) {
         video.bind('play', function () {
           console.log('[Tracking] ▶️ Video started');
 
-          sendTrackingData(video.percentWatched());
+          // Send initial tracking data
+          const initialPercent = getCurrentPercentage();
+          sendTrackingData(initialPercent);
 
+          // Start interval tracking if not already running
           if (!trackingInterval) {
             trackingInterval = setInterval(function () {
-              const percentWatched = video.percentWatched();
-              const floored = Math.floor(percentWatched * 100);
+              const currentPercent = getCurrentPercentage();
+              const floored = Math.floor(currentPercent);
 
-              console.log(`[Tracking] 📊 Interval check: percentWatched=${percentWatched}, floored=${floored}%, lastSent=${lastSentPercent}%`);
+              console.log(`[Tracking] 🔄 Check: current=${floored}%, lastSent=${lastSentPercent}%`);
 
               if (floored > lastSentPercent) {
                 lastSentPercent = floored;
-                sendTrackingData(percentWatched);
+                sendTrackingData(currentPercent);
               }
             }, TRACK_INTERVAL_MS);
           }
@@ -90,10 +108,11 @@ jQuery(function ($) {
         video.bind('end', function () {
           console.log('[Tracking] ⏹️ Video ended → final 100% posted');
           if (!sentFinal) {
-            sendTrackingData(1);
+            sendTrackingData(100);
             sentFinal = true;
           }
           clearInterval(trackingInterval);
+          trackingInterval = null;
         });
       }
     });
