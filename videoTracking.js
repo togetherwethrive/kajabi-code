@@ -1,22 +1,25 @@
 // Initialize video tracking (no jQuery dependency)
-(function initVideoTracking() {
-  const url = new URL(window.location.href);
-  const userId = url.searchParams.get('userId');
-  const contactId = url.searchParams.get('contactId');
-  const webinarElement = document.getElementById('webinar');
-  const webinar = webinarElement ? (webinarElement.value || '') : '';
-  const TRACK_INTERVAL_MS = 5000; //Measured in ms
+(function() {
+  function initVideoTracking() {
+    console.log('[Tracking] Initializing video tracking...');
 
-  // Helper function to check if value is numeric
-  function isNumeric(value) {
-    return !isNaN(parseFloat(value)) && isFinite(value);
-  }
+    const url = new URL(window.location.href);
+    const userId = url.searchParams.get('userId');
+    const contactId = url.searchParams.get('contactId');
+    const webinarElement = document.getElementById('webinar');
+    const webinar = webinarElement ? (webinarElement.value || '') : '';
+    const TRACK_INTERVAL_MS = 5000; //Measured in ms
 
-  if (
-    contactId && userId &&
-    isNumeric(contactId) &&
-    isNumeric(userId)
-  ) {
+    // Helper function to check if value is numeric
+    function isNumeric(value) {
+      return !isNaN(parseFloat(value)) && isFinite(value);
+    }
+
+    if (
+      contactId && userId &&
+      isNumeric(contactId) &&
+      isNumeric(userId)
+    ) {
     window._wq = window._wq || [];
     _wq.push({
       _all: function (video) {
@@ -128,9 +131,20 @@
         });
       }
     });
-  } else {
-    console.warn('[Tracking] 💡 Missing or invalid userId/contactId');
+    } else {
+      console.warn('[Tracking] 💡 Missing or invalid userId/contactId');
+    }
+
+    console.log('[Tracking] ✅ Video tracking initialized successfully');
   }
 
-  console.log('[Tracking] ✅ Video tracking initialized successfully');
-})(); // Immediately invoke the initialization function
+  // Wait for DOM to be ready before initializing
+  if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+    console.log('[Tracking] Waiting for DOM to be ready...');
+    document.addEventListener('DOMContentLoaded', initVideoTracking);
+  } else {
+    // DOM is already ready, initialize immediately
+    initVideoTracking();
+  }
+})();
