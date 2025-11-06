@@ -54,20 +54,20 @@ async function downloadAssetWithFetch(url, filename) {
   try {
     // Show loading state (optional)
     console.log('Downloading asset...');
-    
+
     // Fetch the asset
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     // Get the blob data
     const blob = await response.blob();
-    
+
     // Create a URL for the blob
     const blobUrl = window.URL.createObjectURL(blob);
-    
+
     // Create and trigger download
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -75,14 +75,17 @@ async function downloadAssetWithFetch(url, filename) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     // Clean up the blob URL
     window.URL.revokeObjectURL(blobUrl);
-    
+
     console.log('Download completed!');
   } catch (error) {
-    console.error('Download failed:', error);
-    alert('Failed to download the asset. Please try again.');
+    console.error('Download failed with fetch, attempting fallback:', error);
+
+    // Fallback to simple method (will open in new tab for cross-origin URLs)
+    console.warn('Using fallback method - cross-origin URLs may open in a new tab instead of downloading');
+    downloadAsset(url, filename);
   }
 }
 
@@ -97,7 +100,7 @@ function handleDownloadClick(event) {
   // Read configuration from data attributes
   const assetUrl = button.dataset.url;
   const fileName = button.dataset.fileName || 'download';
-  const downloadMethod = button.dataset.downloadMethod || 'simple';
+  const downloadMethod = button.dataset.downloadMethod || 'fetch'; // Changed default to 'fetch' for better cross-origin support
   const downloadLocation = button.dataset.downloadLocation || button.id || 'Unknown Location';
 
   // Validate required attributes

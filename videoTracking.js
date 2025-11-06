@@ -1,4 +1,17 @@
-jQuery(function ($) {
+// Initialize video tracking with jQuery availability check
+(function initVideoTracking() {
+  // Check if jQuery is available
+  if (typeof jQuery === 'undefined') {
+    console.log('[Tracking] jQuery not yet loaded, waiting...');
+
+    // Retry after a short delay
+    setTimeout(initVideoTracking, 100);
+    return;
+  }
+
+  // jQuery is available, proceed with initialization
+  const $ = jQuery;
+
   const url = new URL(window.location.href);
   const userId = url.searchParams.get('userId');
   const contactId = url.searchParams.get('contactId');
@@ -119,4 +132,6 @@ jQuery(function ($) {
   } else {
     console.warn('[Tracking] 💡 Missing or invalid userId/contactId');
   }
-});
+
+  console.log('[Tracking] ✅ Video tracking initialized successfully');
+})(); // Immediately invoke the initialization function
