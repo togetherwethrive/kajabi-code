@@ -1,10 +1,13 @@
 (function() {
   // jQuery CDN URL
   const jQueryUrl = 'https://code.jquery.com/jquery-3.7.1.min.js';
-  
+
+  // Wistia initializer URL
+  const wistiaUrl = 'https://fast.wistia.com/assets/external/E-v1.js';
+
   // Base URL for all scripts - using jsDelivr CDN which provides proper headers
   const baseUrl = 'https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/';
-  
+
   // Array of script filenames to load
   const scripts = [
     'formValidation.js',
@@ -38,7 +41,16 @@
       } else {
         console.log('jQuery already loaded (version ' + jQuery.fn.jquery + ')');
       }
-      
+
+      // Load Wistia initializer if not already loaded
+      if (typeof Wistia === 'undefined') {
+        console.log('Loading Wistia...');
+        await loadScript(wistiaUrl);
+        console.log('✓ Wistia loaded successfully');
+      } else {
+        console.log('Wistia already loaded');
+      }
+
       // Load custom scripts
       console.log('Starting to load custom scripts...');
       for (const scriptName of scripts) {
@@ -52,7 +64,7 @@
       }
       console.log('All scripts loaded!');
     } catch (error) {
-      console.error('Error loading jQuery:', error);
+      console.error('Error loading scripts:', error);
     }
   }
   
