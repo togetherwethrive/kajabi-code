@@ -71,6 +71,8 @@ jQuery(function ($) {
               const percentWatched = video.percentWatched();
               const floored = Math.floor(percentWatched * 100);
 
+              console.log(`[Tracking] 📊 Interval check: percentWatched=${percentWatched}, floored=${floored}%, lastSent=${lastSentPercent}%`);
+
               if (floored > lastSentPercent) {
                 lastSentPercent = floored;
                 sendTrackingData(percentWatched);
