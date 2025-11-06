@@ -3,7 +3,7 @@ jQuery(function ($) {
   const userId = url.searchParams.get('userId');
   const contactId = url.searchParams.get('contactId');
   const webinar = $('#webinar').val() || '';
-  const TRACK_INTERVAL_MS = 15000; //Measured in ms
+  const TRACK_INTERVAL_MS = 5000; //Measured in ms
 
   if (
     contactId && userId &&
