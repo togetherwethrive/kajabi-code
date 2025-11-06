@@ -1,27 +1,21 @@
-// Initialize video tracking with jQuery availability check
+// Initialize video tracking (no jQuery dependency)
 (function initVideoTracking() {
-  // Check if jQuery is available
-  if (typeof jQuery === 'undefined') {
-    console.log('[Tracking] jQuery not yet loaded, waiting...');
-
-    // Retry after a short delay
-    setTimeout(initVideoTracking, 100);
-    return;
-  }
-
-  // jQuery is available, proceed with initialization
-  const $ = jQuery;
-
   const url = new URL(window.location.href);
   const userId = url.searchParams.get('userId');
   const contactId = url.searchParams.get('contactId');
-  const webinar = $('#webinar').val() || '';
+  const webinarElement = document.getElementById('webinar');
+  const webinar = webinarElement ? (webinarElement.value || '') : '';
   const TRACK_INTERVAL_MS = 5000; //Measured in ms
+
+  // Helper function to check if value is numeric
+  function isNumeric(value) {
+    return !isNaN(parseFloat(value)) && isFinite(value);
+  }
 
   if (
     contactId && userId &&
-    $.isNumeric(contactId) &&
-    $.isNumeric(userId)
+    isNumeric(contactId) &&
+    isNumeric(userId)
   ) {
     window._wq = window._wq || [];
     _wq.push({
@@ -37,7 +31,7 @@
         const resourceId = videoContainer?.getAttribute('data-resource-id');
 
         // Skip if no resourceId found on the video that triggered play
-        if (!resourceId || !$.isNumeric(resourceId)) {
+        if (!resourceId || !isNumeric(resourceId)) {
           console.warn('[Tracking] ⚠️ No valid data-resource-id on this video');
           return;
         }
@@ -63,30 +57,35 @@
 
           console.log(`[Tracking] Sending data for video ${resourceId}: ${percentToSend}% watched`);
 
-          $.ajax({
-            type: 'POST',
-            url: 'https://my.rapidfunnel.com/landing/resource/push-to-sqs',
-            dataType: 'json',
-            async: true,
-            data: {
-              resourceId: resourceId,
-              contactId: contactId,
-              userId: userId,
-              percentageWatched: percentToSend,
-              mediaHash: video.hashedId(),
-              duration: video.duration(),
-              visitorKey: video.visitorKey(),
-              eventKey: video.eventKey(),
-              delayProcess: 1,
-              webinar: webinar,
-            },
-            success: function (response) {
-              console.log('[Tracking] ✅ POST succeeded', response);
-            },
-            error: function () {
-              console.warn('[Tracking] ❌ POST failed');
-            }
+          // Prepare form data for POST request
+          const formData = new URLSearchParams({
+            resourceId: resourceId,
+            contactId: contactId,
+            userId: userId,
+            percentageWatched: percentToSend,
+            mediaHash: video.hashedId(),
+            duration: video.duration(),
+            visitorKey: video.visitorKey(),
+            eventKey: video.eventKey(),
+            delayProcess: 1,
+            webinar: webinar,
           });
+
+          // Use fetch instead of jQuery.ajax
+          fetch('https://my.rapidfunnel.com/landing/resource/push-to-sqs', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString()
+          })
+            .then(response => response.json())
+            .then(data => {
+              console.log('[Tracking] ✅ POST succeeded', data);
+            })
+            .catch(error => {
+              console.warn('[Tracking] ❌ POST failed', error);
+            });
         }
 
         video.bind('play', function () {
