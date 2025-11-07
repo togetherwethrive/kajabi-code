@@ -111,3 +111,5 @@
   } else {
     window._wq = [];
     safeInit();
+  }
+})();
