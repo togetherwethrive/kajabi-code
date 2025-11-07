@@ -1,3 +1,4 @@
+// videoTracking.js
 document.addEventListener('DOMContentLoaded', function () {
   const url = new URL(window.location.href);
   const userId = url.searchParams.get('userId');
