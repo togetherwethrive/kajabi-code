@@ -12,7 +12,8 @@
     'buttonTracking.js',
     'ctaButtonNotification.js',
     'footerAutomation.js',
-    'multipleVideoTracking.js'
+    'multipleVideoTracking.js',
+    'videoLocking.js'
   ];
   
   // Function to load a script
