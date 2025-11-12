@@ -7,6 +7,7 @@
 
   // Array of script filenames to load
   const scripts = [
+    'showButtonOnVideoCompletion.js',
     'formValidation.js',
     'assetDownload.js',
     'buttonTracking.js',
