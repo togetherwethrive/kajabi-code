@@ -22,10 +22,10 @@ function sendDownloadNotification(user, firstName, lastName, phone, email, downl
       ctaPageName: pageName
     }),
     success: function (response) {
-      console.log('Download tracking notification sent successfully', response);
+      // Notification sent
     },
     error: function (xhr, status, error) {
-      console.error('Download tracking notification failed', error);
+      // Failed silently
     }
   });
 }
@@ -52,9 +52,6 @@ function downloadAsset(url, filename) {
  */
 async function downloadAssetWithFetch(url, filename) {
   try {
-    // Show loading state (optional)
-    console.log('Downloading asset...');
-
     // Fetch the asset
     const response = await fetch(url);
 
@@ -78,13 +75,8 @@ async function downloadAssetWithFetch(url, filename) {
 
     // Clean up the blob URL
     window.URL.revokeObjectURL(blobUrl);
-
-    console.log('Download completed!');
   } catch (error) {
-    console.error('Download failed with fetch, attempting fallback:', error);
-
-    // Fallback to simple method (will open in new tab for cross-origin URLs)
-    console.warn('Using fallback method - cross-origin URLs may open in a new tab instead of downloading');
+    // Fallback to simple method
     downloadAsset(url, filename);
   }
 }
@@ -176,18 +168,15 @@ function initDownload() {
   // 1. ID starting with "downloadButton"
   // 2. data-url attribute
   const downloadButtons = document.querySelectorAll('[id^="downloadButton"], [data-url]');
-  
+
   if (downloadButtons.length === 0) {
-    console.warn('No download buttons found. Add data-url attribute or use ID starting with "downloadButton".');
     return;
   }
-  
+
   // Add click event listener to each button
   downloadButtons.forEach(button => {
     button.addEventListener('click', handleDownloadClick);
   });
-  
-  console.log(`Download script initialized successfully! Found ${downloadButtons.length} download button(s).`);
 }
 
 // Initialize when DOM is ready

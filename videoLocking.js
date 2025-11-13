@@ -199,7 +199,6 @@
     if (!container.querySelector('.video-lock-overlay')) {
       const overlay = createLockOverlay(videoData);
       container.appendChild(overlay);
-      console.log(`[VideoLock] 🔒 Locked video #${videoData.index + 1} (resourceId: ${videoData.resourceId})`);
     }
   }
 
@@ -211,7 +210,6 @@
     if (overlay) {
       overlay.remove();
       addUnlockedBadge(container);
-      console.log(`[VideoLock] 🔓 Unlocked video #${videoData.index + 1} (resourceId: ${videoData.resourceId})`);
     }
   }
 
@@ -230,13 +228,7 @@
   // Initialize video locking
   function initializeVideoLocking() {
     const videos = getAllVideos();
-
-    if (videos.length === 0) {
-      console.log('[VideoLock] No videos found on page');
-      return;
-    }
-
-    console.log(`[VideoLock] Found ${videos.length} videos`);
+    if (videos.length === 0) return;
 
     // Process each video
     videos.forEach((videoData, index) => {
@@ -267,8 +259,6 @@
         const videoData = videos.find(v => v.resourceId === resourceId);
         if (!videoData) return;
 
-        console.log(`[VideoLock] Tracking video #${videoData.index + 1}`);
-
         // Update progress on various events
         video.bind('percentwatchedchanged', function(percent) {
           const percentage = Math.floor(percent * 100);
@@ -288,7 +278,6 @@
 
         video.bind('end', function() {
           VideoProgress.set(resourceId, 100);
-          console.log(`[VideoLock] ✅ Video #${videoData.index + 1} completed`);
 
           // Unlock next video
           const nextVideoIndex = videoData.index + 1;
@@ -313,8 +302,6 @@
     setInterval(initializeVideoLocking, CONFIG.CHECK_INTERVAL);
   }
 
-  // Start the locking system
-  console.log('[VideoLock] 🎬 Video locking system initialized');
   init();
 
 })();

@@ -111,12 +111,10 @@ jQuery(function ($) {
                 ctaPageName: pageName
               }),
               success: function (response) {
-                console.log("CTA Tracking email sent successfully");
                 isProcessing = false;
                 handleRedirect(redirectUrl, target);
               },
               error: function (xhr, status, error) {
-                console.error("CTA Tracking email failed:", error);
                 isProcessing = false;
                 handleRedirect(redirectUrl, target);
               }

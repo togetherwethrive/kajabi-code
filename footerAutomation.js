@@ -8,10 +8,6 @@ jQuery(function ($) {
     const emailIcon = document.querySelector('span.fa.fa-envelope.fa-lg');
     const phoneIcon = document.querySelector('span.fa.fa-phone.fa-lg');
 
-    console.log('User ID: ' + userId);
-    console.log('Resource ID: ' + resourceId);
-    console.log('Contact ID: ' + contactId);
-
     if (emailIcon) {
       const styleSheet = document.styleSheets[0];
       styleSheet.insertRule(
@@ -33,14 +29,9 @@ jQuery(function ($) {
         'https://apiv2.rapidfunnel.com/v2/users-details/' + userId,
         function (data) {
           const userData = data.data[0];
-          console.log('userdata', userData);
-  
-          console.log('custom booking link', userData.customBookingLink);
-  
-          
+
           window.sharedData = window.sharedData || {};
           window.sharedData.customBookingLink = userData.customBookingLink;
-          console.log('shared global custom booking link:', window.sharedData.customBookingLink);
   
           // Loop over the userData keys
           for (const key of Object.keys(userData)) {
@@ -73,12 +64,10 @@ jQuery(function ($) {
                   $element.find('span').text('');
                   $('.custom_custombookinglink').attr('href', value);
                   $('.alternate-text').hide();
-  
+
                   // Trigger the custom event now that the href has been updated
                   $(document).trigger('customBookingLinkUpdated');
-                  console.log('Custom Booking Link Updated event triggered');
                 } else {
-                  console.log('Custom Booking Link Hidden as no value returned in API');
                   $element.hide();
                   $('.custom_custombookinglink').hide();
                 }
@@ -111,10 +100,8 @@ jQuery(function ($) {
           }
         }
       ).fail(function () {
-        console.error('Failed to fetch contact details.');
+        console.error('Failed to fetch user details.');
       });
-    } else {
-      console.log('No contactId found in the URL.');
     }
   });
 });

@@ -30,11 +30,9 @@ function sendNotification(user, firstName, lastName, phone, email, btnLocation, 
       ctaPageName: pageName
     }),
     success: function (response) {
-      console.log('CTA notification sent successfully', response);
       handleRedirect(redirectUrl, target);
     },
     error: function (xhr, status, error) {
-      console.error('CTA notification failed', error);
       handleRedirect(redirectUrl, target);
     }
   });
@@ -50,8 +48,7 @@ jQuery(function ($) {
   
   $('[id^="ctaButton"]').on('click', function(event) {
     event.preventDefault();
-    console.log("Clicked CTA Button: ", this.id);
-    
+
     // Capture redirect properties HERE where 'this' is the button
     var ctaButtonLocation = $(this).attr('data-description');
     const redirectUrl = $(this).attr('href');

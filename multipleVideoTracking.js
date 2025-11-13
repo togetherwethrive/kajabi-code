@@ -15,8 +15,6 @@
       window._wq = window._wq || [];
       _wq.push({
         _all: function(video) {
-          console.log("[Tracking] Wistia video is ready");
-
           let lastSentPercent = 0;
           let trackingInterval = null;
           let sentFinal = false;
@@ -32,8 +30,6 @@
           function sendTrackingData(rawPercentWatched) {
             const percentageWatched = Math.floor(rawPercentWatched * 1);
             if (percentageWatched > 100) return;
-
-            console.log(`[Tracking] Sending data for video ${resourceId}: ${percentageWatched}% watched`);
 
             const formData = new URLSearchParams({
               resourceId: resourceId,
@@ -54,12 +50,10 @@
               body: formData.toString(),
             })
               .then(response => response.json())
-              .then(data => console.log('[Tracking] ✅ POST succeeded', data))
               .catch(() => console.warn('[Tracking] ❌ POST failed'));
           }
 
           video.bind('play', function() {
-            console.log('[Tracking] ▶️ Video started');
             sendTrackingData(video.percentWatched());
 
             if (!trackingInterval) {
@@ -75,13 +69,11 @@
           });
 
           video.bind('pause', function() {
-            console.log('[Tracking] ⏸️ Video paused → stop tracking');
             clearInterval(trackingInterval);
             trackingInterval = null;
           });
 
           video.bind('end', function() {
-            console.log('[Tracking] ⏹️ Video ended → final 100% posted');
             if (!sentFinal) {
               sendTrackingData(1);
               sentFinal = true;
