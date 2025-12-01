@@ -131,7 +131,7 @@
   function showButton() {
     const button = document.getElementById('videoButton');
     if (button) {
-      button.style.display = 'block';
+      button.style.display = 'inline-block';
       console.log("[Button Display] ✅ Button is now visible!");
     } else {
       console.warn("[Button Display] ⚠️ Button disappeared from DOM");
