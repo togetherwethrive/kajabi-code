@@ -19,8 +19,8 @@
   }
 
   // Check if we have valid user credentials
-  if (!contactId || !userId || !isNumeric(contactId) || !isNumeric(userId)) {
-    console.warn('[VideoLock] 💡 Missing or invalid userId/contactId - locking disabled');
+  if (!userId || !isNumeric(userId)) {
+    console.warn('[VideoLock] 💡 Missing or invalid userId - locking disabled');
     return;
   }
 
