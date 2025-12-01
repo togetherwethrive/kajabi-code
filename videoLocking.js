@@ -87,8 +87,8 @@
           </svg>
         </div>
         <div class="video-lock-message">
-          <h3>Vídeo Bloqueado</h3>
-          <p>Complete o vídeo anterior para desbloquear</p>
+          <h3>Video Locked</h3>
+          <p>Complete the previous video to unlock</p>
         </div>
       </div>
     `;
@@ -176,7 +176,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      <span>Desbloqueado</span>
+      <span>Unlocked</span>
     `;
 
     container.style.position = 'relative';
