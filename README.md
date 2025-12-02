@@ -142,10 +142,11 @@ Load specific modules as needed:
 - Captures button location/description
 - Handles redirects after notification
 - Works with or without contact data
+- Automatically passes URL parameters (userId, contactId, resourceId) to button destinations
 
 **Button Markup**:
 ```html
-<a href="https://destination.com" 
+<a href="https://destination.com"
    id="ctaButton1"
    data-description="Download Free Guide"
    target="_blank">
@@ -153,11 +154,40 @@ Load specific modules as needed:
 </a>
 ```
 
+**URL Parameter Handling**:
+The script automatically processes button href URLs and passes parameters from the current page URL. It supports three formats:
+
+1. **Square Bracket Placeholders** (e.g., `[user-id]`, `[contactId]`)
+2. **Curly Brace Placeholders** (e.g., `{userId}`, `{contactId}`)
+3. **Query Parameters** (auto-appended if no placeholders found)
+
+**Examples**:
+```html
+<!-- Path-based format with square brackets -->
+<a href="https://thrivewithtwtapp.com/res/66980/[user-id]/[contactId]" id="ctaButton1">
+  Next Page
+</a>
+<!-- Result: https://thrivewithtwtapp.com/res/66980/123/456 -->
+
+<!-- Query parameter format with curly braces -->
+<a href="https://example.com/page?user={userId}&contact={contactId}" id="ctaButton2">
+  Continue
+</a>
+<!-- Result: https://example.com/page?user=123&contact=456 -->
+
+<!-- No placeholders - parameters auto-appended -->
+<a href="https://example.com/page" id="ctaButton3">
+  Go
+</a>
+<!-- Result: https://example.com/page?userId=123&contactId=456&resourceId=789 -->
+```
+
 **How It Works**:
 1. Button clicked → Captures redirect URL and target
 2. Fetches contact details (if `contactId` in URL)
 3. Sends notification email
-4. Redirects user to intended destination
+4. Processes URL with parameters (replaces placeholders or appends query params)
+5. Redirects user to intended destination
 
 ---
 
@@ -171,10 +201,11 @@ Load specific modules as needed:
 - Tracks button clicks with email notifications
 - Prevents duplicate submissions
 - Graceful error handling
+- Automatically passes URL parameters (userId, contactId, resourceId) to button destinations
 
 **Button Markup**:
 ```html
-<a href="#" 
+<a href="#"
    id="ctaTrackingButton1"
    data-cta-tracking-id="RESOURCE_ID"
    data-cta-tracking-location="Hero Section"
@@ -183,12 +214,32 @@ Load specific modules as needed:
 </a>
 ```
 
+**URL Parameter Handling**:
+Like `ctaButtonNotification.js`, this script automatically processes button URLs fetched from the API and passes parameters. It supports three formats:
+
+1. **Square Bracket Placeholders** (e.g., `[user-id]`, `[userId]`, `[contactId]`)
+2. **Curly Brace Placeholders** (e.g., `{userId}`, `{contactId}`)
+3. **Query Parameters** (auto-appended if no placeholders found)
+
+**Examples**:
+```html
+<!-- API returns: https://thrivewithtwtapp.com/res/66980/[user-id]/[contactId] -->
+<!-- Button href becomes: https://thrivewithtwtapp.com/res/66980/123/456 -->
+
+<!-- API returns: https://example.com/resource?id={resourceId} -->
+<!-- Button href becomes: https://example.com/resource?id=789 -->
+
+<!-- API returns: https://example.com/page -->
+<!-- Button href becomes: https://example.com/page?userId=123&contactId=456&resourceId=789 -->
+```
+
 **Workflow**:
 1. Page loads → Fetches resource URLs for all tracking buttons
-2. Updates button `href` attributes with tracking URLs
-3. On click → Fetches contact data
-4. Sends tracking email
-5. Redirects to tracked URL
+2. Processes URLs with parameters (replaces placeholders or appends query params)
+3. Updates button `href` attributes with processed tracking URLs
+4. On click → Fetches contact data
+5. Sends tracking email
+6. Redirects to tracked URL
 
 ---
 
@@ -767,6 +818,75 @@ All scripts expect these URL parameters:
 ```
 https://yourpage.com?userId=12345&resourceId=67890&contactId=11223
 ```
+
+---
+
+### URL Parameter Passing in Buttons
+
+Both `buttonTracking.js` and `ctaButtonNotification.js` automatically pass URL parameters to button destinations. This ensures user context is maintained across page navigation.
+
+**Supported Placeholder Formats**:
+
+| Format | Placeholders | Use Case |
+|--------|-------------|----------|
+| Square Brackets | `[user-id]`, `[userId]`, `[contactId]`, `[resourceId]` | Path-based URLs |
+| Curly Braces | `{userId}`, `{contactId}`, `{resourceId}` | Query parameter URLs |
+| Auto-append | No placeholders needed | Automatic query string addition |
+
+**Real-World Examples**:
+
+**Example 1: Path-based URL** (like your requirement)
+```html
+<!-- Button markup -->
+<a href="https://thrivewithtwtapp.com/res/66980/[user-id]/[contactId]" id="ctaButton1">
+  Next Module
+</a>
+
+<!-- Current page URL: ?userId=123&contactId=456 -->
+<!-- Result: https://thrivewithtwtapp.com/res/66980/123/456 -->
+```
+
+**Example 2: Mixed placeholders in query string**
+```html
+<a href="https://example.com/page?user={userId}&contact={contactId}" id="ctaButton2">
+  Continue
+</a>
+
+<!-- Current page URL: ?userId=789&contactId=101 -->
+<!-- Result: https://example.com/page?user=789&contact=101 -->
+```
+
+**Example 3: No placeholders (auto-append)**
+```html
+<a href="https://example.com/checkout" id="ctaButton3">
+  Checkout
+</a>
+
+<!-- Current page URL: ?userId=555&contactId=888&resourceId=999 -->
+<!-- Result: https://example.com/checkout?userId=555&contactId=888&resourceId=999 -->
+```
+
+**Example 4: Multiple placeholder types**
+```html
+<a href="https://app.example.com/course/[resourceId]/user/{userId}" id="ctaButton4">
+  Start Course
+</a>
+
+<!-- Current page URL: ?userId=123&resourceId=456 -->
+<!-- Result: https://app.example.com/course/456/user/123 -->
+```
+
+**Placeholder Variants Supported**:
+- `[user-id]` or `[userId]` → Both work for userId
+- `[contactId]` → Contact ID
+- `[resourceId]` → Resource ID
+- `{userId}`, `{contactId}`, `{resourceId}` → Curly brace format
+
+**Processing Logic**:
+1. Script checks if URL contains any placeholders
+2. If found → Replaces all placeholders with actual values from page URL
+3. If not found → Appends parameters as query string
+4. Button redirects to processed URL
 
 ---
 

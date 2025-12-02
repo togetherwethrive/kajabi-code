@@ -11,7 +11,30 @@ function processUrlWithParams(url) {
   let processedUrl = url;
   let hasPlaceholder = false;
 
-  // Check and replace placeholders
+  // Check and replace square bracket placeholders [user-id], [userId], [contactId], [resourceId]
+  if (userId) {
+    if (processedUrl.includes('[user-id]') || processedUrl.includes('[userId]')) {
+      processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+      processedUrl = processedUrl.replace(/\[userId\]/g, userId);
+      hasPlaceholder = true;
+    }
+  }
+
+  if (contactId) {
+    if (processedUrl.includes('[contactId]')) {
+      processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+      hasPlaceholder = true;
+    }
+  }
+
+  if (resourceId) {
+    if (processedUrl.includes('[resourceId]')) {
+      processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+      hasPlaceholder = true;
+    }
+  }
+
+  // Check and replace curly brace placeholders {userId}, {contactId}, {resourceId}
   if (userId && processedUrl.includes('{userId}')) {
     processedUrl = processedUrl.replace(/\{userId\}/g, userId);
     hasPlaceholder = true;
