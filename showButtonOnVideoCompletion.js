@@ -1,6 +1,35 @@
 (function() {
   console.log("[Button Display] Script loaded");
 
+  // Configuration
+  const STORAGE_KEY = 'kajabi_button_unlocked';
+
+  // Storage management for button unlock state
+  const ButtonStorage = {
+    get: function(videoId) {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        const unlocked = data ? JSON.parse(data) : {};
+        return unlocked[videoId] || false;
+      } catch (e) {
+        console.warn('[Button Display] Error reading unlock state:', e);
+        return false;
+      }
+    },
+
+    set: function(videoId, unlocked) {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        const unlockedStates = data ? JSON.parse(data) : {};
+        unlockedStates[videoId] = unlocked;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(unlockedStates));
+        console.log(`[Button Display] Button unlock state saved for video: ${videoId}`);
+      } catch (e) {
+        console.warn('[Button Display] Error saving unlock state:', e);
+      }
+    }
+  };
+
   // Check if button exists on page
   function checkButton() {
     const button = document.getElementById('videoButton');
@@ -62,13 +91,21 @@
     let buttonShown = false;
     let checkInterval = null;
 
+    // Check if button was already unlocked (from cache)
+    if (ButtonStorage.get(videoId)) {
+      console.log(`[Button Display] Button was previously unlocked for video: ${videoId}`);
+      showButton();
+      buttonShown = true;
+      return; // No need to set up watchers
+    }
+
     // Watch for 90% completion
     function checkProgress() {
       const percentWatched = lastVideo.percentWatched();
       const percentageValue = Math.floor(percentWatched * 100);
 
       if (!buttonShown && percentageValue >= 90) {
-        showButton();
+        showButton(videoId);
         buttonShown = true;
         if (checkInterval) {
           clearInterval(checkInterval);
@@ -109,7 +146,7 @@
     lastVideo.bind('end', function() {
       if (!buttonShown) {
         console.log(`[Button Display] Video ${videoId} ended - showing button`);
-        showButton();
+        showButton(videoId);
         buttonShown = true;
       }
     });
@@ -128,11 +165,16 @@
     }
   }
 
-  function showButton() {
+  function showButton(videoId) {
     const button = document.getElementById('videoButton');
     if (button) {
       button.style.display = 'inline-block';
       console.log("[Button Display] ✅ Button is now visible!");
+
+      // Save unlock state to cache if videoId is provided
+      if (videoId) {
+        ButtonStorage.set(videoId, true);
+      }
     } else {
       console.warn("[Button Display] ⚠️ Button disappeared from DOM");
     }
