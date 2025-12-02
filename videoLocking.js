@@ -132,6 +132,7 @@
           margin: 0 0 10px 0;
           font-size: 24px;
           font-weight: 600;
+          color: white;
         }
 
         .video-lock-message p {
