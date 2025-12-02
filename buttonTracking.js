@@ -3,15 +3,65 @@ jQuery(function ($) {
   const parsedUrl = new URL(window.location.href);
   const userId = parsedUrl.searchParams.get('userId');
   const contactId = parsedUrl.searchParams.get('contactId');
+  const resourceId = parsedUrl.searchParams.get('resourceId');
   const pageName = document.title || "Unknown Page";
-  
+
   // Cache selector results to improve performance
   const $ctaTrackingButtons = $('[id^="ctaTrackingButton"]');
-  
+
+  // Helper function to process URL with parameters
+  function processUrlWithParams(url) {
+    if (!url) return url;
+
+    let processedUrl = url;
+    let hasPlaceholder = false;
+
+    // Check and replace placeholders
+    if (userId && processedUrl.includes('{userId}')) {
+      processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+      hasPlaceholder = true;
+    }
+
+    if (contactId && processedUrl.includes('{contactId}')) {
+      processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+      hasPlaceholder = true;
+    }
+
+    if (resourceId && processedUrl.includes('{resourceId}')) {
+      processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+      hasPlaceholder = true;
+    }
+
+    // If no placeholders were found, append as query parameters
+    if (!hasPlaceholder) {
+      try {
+        const urlObj = new URL(processedUrl);
+
+        if (userId) {
+          urlObj.searchParams.set('userId', userId);
+        }
+
+        if (contactId) {
+          urlObj.searchParams.set('contactId', contactId);
+        }
+
+        if (resourceId) {
+          urlObj.searchParams.set('resourceId', resourceId);
+        }
+
+        processedUrl = urlObj.toString();
+      } catch (e) {
+        console.warn("Invalid URL format:", processedUrl, e);
+      }
+    }
+
+    return processedUrl;
+  }
+
   // Helper function for redirects
   function handleRedirect(url, target) {
     if (!url) return;
-    
+
     if (target === "_blank") {
       window.open(url, "_blank", "noopener,noreferrer");
     } else {
@@ -39,16 +89,9 @@ jQuery(function ($) {
       },
       success: function (response) {
         if (response && response.data && response.data.resourceUrl) {
-          // Use URL construction that's less prone to errors
-          let formattedTrackingUrl = new URL(response.data.resourceUrl);
-          formattedTrackingUrl.pathname += formattedTrackingUrl.pathname.endsWith('/') ? '' : '/';
-          formattedTrackingUrl.pathname += userId;
-          
-          if (contactId) {
-            formattedTrackingUrl.pathname += '/' + contactId;
-          }
-          
-          $button.attr('href', formattedTrackingUrl.toString());
+          // Process the URL with parameters (replaces placeholders or appends query params)
+          const formattedTrackingUrl = processUrlWithParams(response.data.resourceUrl);
+          $button.attr('href', formattedTrackingUrl);
         } else {
           console.warn("Invalid tracking data received for:", ctaTrackingId);
           $button.attr("href", "#").addClass("disabled");

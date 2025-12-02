@@ -1,10 +1,68 @@
+// Parse the URL to extract parameters
+const parsedUrl = new URL(window.location.href);
+const userId = parsedUrl.searchParams.get('userId');
+const contactId = parsedUrl.searchParams.get('contactId');
+const resourceId = parsedUrl.searchParams.get('resourceId');
+
+// Helper function to process URL with parameters
+function processUrlWithParams(url) {
+  if (!url) return url;
+
+  let processedUrl = url;
+  let hasPlaceholder = false;
+
+  // Check and replace placeholders
+  if (userId && processedUrl.includes('{userId}')) {
+    processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+    hasPlaceholder = true;
+  }
+
+  if (contactId && processedUrl.includes('{contactId}')) {
+    processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+    hasPlaceholder = true;
+  }
+
+  if (resourceId && processedUrl.includes('{resourceId}')) {
+    processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+    hasPlaceholder = true;
+  }
+
+  // If no placeholders were found, append as query parameters
+  if (!hasPlaceholder) {
+    try {
+      const urlObj = new URL(processedUrl);
+
+      if (userId) {
+        urlObj.searchParams.set('userId', userId);
+      }
+
+      if (contactId) {
+        urlObj.searchParams.set('contactId', contactId);
+      }
+
+      if (resourceId) {
+        urlObj.searchParams.set('resourceId', resourceId);
+      }
+
+      processedUrl = urlObj.toString();
+    } catch (e) {
+      console.warn("Invalid URL format:", processedUrl, e);
+    }
+  }
+
+  return processedUrl;
+}
+
 // Helper function for redirects
 function handleRedirect(url, target) {
-  if(url) { 
+  if(url) {
+    // Process URL with parameters before redirecting
+    const processedUrl = processUrlWithParams(url);
+
     if (target === "_blank") {
-      window.open(url, '_blank');
+      window.open(processedUrl, '_blank');
     } else {
-      window.location.href = url;
+      window.location.href = processedUrl;
     }
   }
 }
@@ -39,13 +97,6 @@ function sendNotification(user, firstName, lastName, phone, email, btnLocation, 
 }
 
 jQuery(function ($) {
-  // Parse the current URL to get query parameters
-  const url = window.location.href;
-  const parsedUrl = new URL(url);
-  var userId = parsedUrl.searchParams.get('userId');
-  var resourceId = parsedUrl.searchParams.get('resourceId');
-  var contactId = parsedUrl.searchParams.get('contactId');
-  
   $('[id^="ctaButton"]').on('click', function(event) {
     event.preventDefault();
 
