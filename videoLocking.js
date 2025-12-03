@@ -115,7 +115,7 @@
 
         .video-lock-content {
           text-align: center;
-          color: white;
+          color: #fff;
           padding: 20px;
         }
 
@@ -132,7 +132,7 @@
           margin: 0 0 10px 0;
           font-size: 24px;
           font-weight: 600;
-          color: white;
+          color: #fff;
         }
 
         .video-lock-message p {
@@ -146,7 +146,7 @@
           top: 10px;
           right: 10px;
           background: #10b981;
-          color: white;
+          color: #fff;
           padding: 5px 12px;
           border-radius: 20px;
           font-size: 12px;
