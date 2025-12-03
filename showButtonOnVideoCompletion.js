@@ -103,8 +103,10 @@
     function checkProgress() {
       const percentWatched = lastVideo.percentWatched();
       const percentageValue = Math.floor(percentWatched * 100);
+      console.log(`[Button Display] Progress check: ${percentageValue}%`);
 
       if (!buttonShown && percentageValue >= 90) {
+        console.log(`[Button Display] 90% threshold reached - showing button`);
         showButton(videoId);
         buttonShown = true;
         if (checkInterval) {
@@ -166,8 +168,11 @@
   }
 
   function showButton(videoId) {
+    console.log(`[Button Display] showButton() called with videoId: ${videoId}`);
     const button = document.getElementById('videoButton');
+
     if (button) {
+      console.log(`[Button Display] Button element found, current display: ${button.style.display}`);
       button.style.display = 'inline-block';
       console.log("[Button Display] ✅ Button is now visible!");
 
@@ -176,7 +181,7 @@
         ButtonStorage.set(videoId, true);
       }
     } else {
-      console.warn("[Button Display] ⚠️ Button disappeared from DOM");
+      console.warn("[Button Display] ⚠️ Button with id 'videoButton' not found in DOM");
     }
   }
 
