@@ -8,6 +8,9 @@ const resourceId = parsedUrl.searchParams.get('resourceId');
 function processUrlWithParams(url) {
   if (!url) return url;
 
+  console.log('[CTA Notification] Processing URL:', url);
+  console.log('[CTA Notification] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
+
   let processedUrl = url;
   let hasPlaceholder = false;
 
@@ -69,10 +72,11 @@ function processUrlWithParams(url) {
 
       processedUrl = urlObj.toString();
     } catch (e) {
-      console.warn("Invalid URL format:", processedUrl, e);
+      console.warn("[CTA Notification] Invalid URL format:", processedUrl, e);
     }
   }
 
+  console.log('[CTA Notification] Processed URL:', processedUrl);
   return processedUrl;
 }
 
@@ -127,7 +131,11 @@ jQuery(function ($) {
     var ctaButtonLocation = $(this).attr('data-description');
     const redirectUrl = $(this).attr('href');
     const target = $(this).attr('target');
-    
+
+    console.log('[CTA Notification] Button clicked:', $(this).attr('id'));
+    console.log('[CTA Notification] Original href:', redirectUrl);
+    console.log('[CTA Notification] Target:', target);
+
     if(!ctaButtonLocation) {
       ctaButtonLocation = $(this).attr('id');
     }

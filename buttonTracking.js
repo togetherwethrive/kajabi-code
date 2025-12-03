@@ -13,6 +13,9 @@ jQuery(function ($) {
   function processUrlWithParams(url) {
     if (!url) return url;
 
+    console.log('[Button Tracking] Processing URL:', url);
+    console.log('[Button Tracking] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
+
     let processedUrl = url;
     let hasPlaceholder = false;
 
@@ -74,10 +77,11 @@ jQuery(function ($) {
 
         processedUrl = urlObj.toString();
       } catch (e) {
-        console.warn("Invalid URL format:", processedUrl, e);
+        console.warn("[Button Tracking] Invalid URL format:", processedUrl, e);
       }
     }
 
+    console.log('[Button Tracking] Processed URL:', processedUrl);
     return processedUrl;
   }
 
@@ -140,14 +144,19 @@ jQuery(function ($) {
     // Prevent multiple simultaneous clicks
     if (isProcessing) return;
     isProcessing = true;
-    
+
     const $button = $('#' + buttonId);
     const ctaTrackingLocation = $button.attr('data-cta-tracking-location');
     const redirectUrl = $button.attr('href');
     const target = $button.attr('target');
-    
+
+    console.log('[Button Tracking] Button clicked:', buttonId);
+    console.log('[Button Tracking] Redirect URL from href:', redirectUrl);
+    console.log('[Button Tracking] Target:', target);
+
     // Don't process disabled buttons or ones with # hrefs
     if ($button.hasClass('disabled') || redirectUrl === '#') {
+      console.warn('[Button Tracking] Button is disabled or has # href');
       isProcessing = false;
       return;
     }
