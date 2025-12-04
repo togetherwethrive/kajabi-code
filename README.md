@@ -18,7 +18,7 @@ A comprehensive collection of JavaScript utilities for building interactive web 
 
 ## Overview
 
-This library provides eleven core JavaScript modules plus a master loader script and HTML template:
+This library provides twelve core JavaScript modules plus a master loader script and HTML template:
 
 - **Form Validation & Contact Creation** - Two-step form submission with GDPR compliance
 - **CTA Button Tracking** - Click tracking with email notifications
@@ -28,6 +28,7 @@ This library provides eleven core JavaScript modules plus a master loader script
 - **Multiple Video Tracking** - Wistia video engagement analytics with progress tracking
 - **Video Locking** - Sequential video unlocking based on watch completion
 - **Show Button on Video Completion** - Display hidden buttons when last video reaches 90%
+- **Back Button Navigation** - Automatic back button for users coming from another page
 - **Master Loader** - Automatic dependency management
 - **Footer Template** - Complete HTML example for footer implementation
 
@@ -479,7 +480,103 @@ STORAGE_KEY: 'kajabi_video_progress'
 
 ---
 
-### 10. Master Loader (`mainCodeInitializer.js`)
+### 10. Back Button Navigation (`backButton.js`)
+
+**Purpose**: Automatically displays a floating back button for users who arrived from another page.
+
+**Features**:
+- Detects document referrer to determine if user came from another page
+- Creates a styled floating back button
+- Excludes search engines and social media referrers
+- Configurable position and styling
+- Option to show only for same-domain navigation
+- Responsive design for mobile and desktop
+- One-click navigation to previous page
+
+**Configuration Options**:
+```javascript
+const CONFIG = {
+  BUTTON_POSITION: 'bottom-left', // 'bottom-left', 'bottom-right', 'top-left', 'top-right'
+  BUTTON_TEXT: '← Back',
+  BUTTON_COLOR: '#291d5c',
+  BUTTON_TEXT_COLOR: '#fff',
+  SHOW_ONLY_INTERNAL: false, // Only show for same-domain referrers
+  ALLOWED_DOMAINS: [], // Whitelist specific domains
+  EXCLUDED_REFERRERS: ['google.com', 'facebook.com', 'instagram.com', 'twitter.com', 'linkedin.com']
+};
+```
+
+**When the Button Shows**:
+- ✅ User clicked a link from your site
+- ✅ User clicked a link from another site (if not excluded)
+- ✅ User came from email link or bookmark with referrer
+- ❌ User typed URL directly
+- ❌ User came from search engine (Google, Bing, etc.)
+- ❌ User came from social media (Facebook, Twitter, LinkedIn, Instagram)
+- ❌ User opened from bookmark with no referrer
+
+**Use Cases**:
+- Course modules - Easy navigation back to course index
+- Multi-page forms - Return to previous step
+- Product pages - Back to product catalog
+- Blog posts - Return to blog index
+- Video series - Navigate between lessons
+
+**Customization Examples**:
+
+**Example 1: Bottom-right position with custom color**
+```javascript
+// Edit backButton.js configuration
+const CONFIG = {
+  BUTTON_POSITION: 'bottom-right',
+  BUTTON_COLOR: '#10b981', // Green
+  BUTTON_TEXT: '⬅ Previous Page'
+};
+```
+
+**Example 2: Show only for internal navigation**
+```javascript
+const CONFIG = {
+  SHOW_ONLY_INTERNAL: true, // Only show when navigating within your site
+  BUTTON_POSITION: 'top-left'
+};
+```
+
+**Example 3: Allow specific external domains**
+```javascript
+const CONFIG = {
+  ALLOWED_DOMAINS: ['yourdomain.com', 'partner-site.com'],
+  EXCLUDED_REFERRERS: [] // Don't exclude any
+};
+```
+
+**How It Works**:
+1. Script checks `document.referrer` on page load
+2. Validates referrer against excluded domains
+3. If valid referrer found → Creates floating back button
+4. Button click triggers `window.history.back()`
+5. User returns to previous page
+
+**Styling**:
+The button is styled with:
+- Fixed position (stays visible while scrolling)
+- Smooth hover animations
+- Shadow effects for depth
+- Responsive sizing for mobile
+- High z-index (9998) to stay above content
+
+**Integration Example**:
+```html
+<!-- Automatic with master loader -->
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+
+<!-- Or load individually -->
+<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/backButton.js"></script>
+```
+
+---
+
+### 11. Master Loader (`mainCodeInitializer.js`)
 
 **Purpose**: Centralized script loader that automatically loads all dependencies in the correct order.
 
@@ -501,6 +598,7 @@ STORAGE_KEY: 'kajabi_video_progress'
 7. footerAutomation.js
 8. multipleVideoTracking.js
 9. videoLocking.js
+10. backButton.js
 
 **Usage**:
 ```html
@@ -522,7 +620,7 @@ All scripts loaded!
 
 ---
 
-### 11. Footer Template (`footer-template.html`)
+### 12. Footer Template (`footer-template.html`)
 
 **Purpose**: Complete HTML template demonstrating footerAutomation.js implementation.
 
@@ -1272,7 +1370,7 @@ For issues or questions:
 
 ## File Inventory
 
-### JavaScript Modules (11)
+### JavaScript Modules (12)
 1. `formValidation.js` - Form field validation with GDPR
 2. `contactForm.js` - Contact creation API integration
 3. `ctaButtonNotification.js` - Simple CTA click tracking
@@ -1282,13 +1380,14 @@ For issues or questions:
 7. `multipleVideoTracking.js` - Wistia video analytics
 8. `videoLocking.js` - Sequential video unlocking
 9. `showButtonOnVideoCompletion.js` - Button reveal on video completion
-10. `mainCodeInitializer.js` - Master dependency loader
-11. *(contactForm.js dynamically loaded after validation)*
+10. `backButton.js` - Automatic back navigation button
+11. `mainCodeInitializer.js` - Master dependency loader
+12. *(contactForm.js dynamically loaded after validation)*
 
 ### HTML Templates (1)
 1. `footer-template.html` - Complete footer implementation example
 
-### Total Files: 12
+### Total Files: 13
 
 ---
 
