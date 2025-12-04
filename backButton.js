@@ -117,9 +117,10 @@
         .back-navigation-button {
           padding: 10px 20px;
           font-size: 14px;
-          bottom: 15px;
+          top: 15px;
           left: 15px;
-          right: 15px;
+          bottom: auto;
+          right: auto;
         }
       }
     `;
