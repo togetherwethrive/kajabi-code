@@ -81,7 +81,7 @@
     overlay.innerHTML = `
       <div class="video-lock-content">
         <div class="video-lock-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
@@ -115,7 +115,7 @@
 
         .video-lock-content {
           text-align: center;
-          color: #fff;
+          color: #fff !important;
           padding: 20px;
         }
 
@@ -132,12 +132,13 @@
           margin: 0 0 10px 0;
           font-size: 24px;
           font-weight: 600;
-          color: #fff;
+          color: #fff !important;
         }
 
         .video-lock-message p {
           margin: 0;
           font-size: 16px;
+          color: #fff !important;
           opacity: 0.8;
         }
 
