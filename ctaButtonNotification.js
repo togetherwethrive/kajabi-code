@@ -66,7 +66,10 @@ function processUrlWithParams(url) {
         urlObj.searchParams.set('contactId', contactId);
       }
 
-      if (resourceId) {
+      // Only append resourceId if the URL doesn't already contain a numeric resourceId in the path
+      // This prevents adding page's resourceId when button URL has its own resourceId
+      const hasResourceIdInPath = /\/\d{4,}\//.test(processedUrl);
+      if (resourceId && !hasResourceIdInPath) {
         urlObj.searchParams.set('resourceId', resourceId);
       }
 
