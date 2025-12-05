@@ -24,27 +24,51 @@
     return;
   }
 
+  // In-memory fallback for Safari private mode
+  let memoryStorage = {};
+  let localStorageAvailable = true;
+
+  // Test if localStorage is available
+  try {
+    localStorage.setItem('test', 'test');
+    localStorage.removeItem('test');
+  } catch (e) {
+    console.warn('[VideoLock] localStorage not available (possibly Safari private mode), using in-memory storage');
+    localStorageAvailable = false;
+  }
+
   // Storage management
   const VideoProgress = {
     get: function(resourceId) {
       try {
-        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const progress = data ? JSON.parse(data) : {};
-        return progress[resourceId] || 0;
+        if (localStorageAvailable) {
+          const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+          const progress = data ? JSON.parse(data) : {};
+          return progress[resourceId] || 0;
+        } else {
+          return memoryStorage[resourceId] || 0;
+        }
       } catch (e) {
-        console.warn('[VideoLock] Error reading progress:', e);
-        return 0;
+        console.warn('[VideoLock] Error reading progress, using memory fallback:', e);
+        return memoryStorage[resourceId] || 0;
       }
     },
 
     set: function(resourceId, percentage) {
       try {
-        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const progress = data ? JSON.parse(data) : {};
-        progress[resourceId] = Math.max(progress[resourceId] || 0, percentage);
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
+        // Always update memory storage
+        memoryStorage[resourceId] = Math.max(memoryStorage[resourceId] || 0, percentage);
+
+        // Try to update localStorage if available
+        if (localStorageAvailable) {
+          const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+          const progress = data ? JSON.parse(data) : {};
+          progress[resourceId] = Math.max(progress[resourceId] || 0, percentage);
+          localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
+        }
       } catch (e) {
-        console.warn('[VideoLock] Error saving progress:', e);
+        console.warn('[VideoLock] Error saving progress to localStorage, using memory only:', e);
+        localStorageAvailable = false;
       }
     },
 
@@ -214,6 +238,8 @@
       console.log(`[VideoLock] 🔓 Removing overlay for resourceId: ${videoData.resourceId}`);
       overlay.remove();
       addUnlockedBadge(container);
+      // Mark container as unlocked to prevent re-locking
+      container.setAttribute('data-video-unlocked', 'true');
     }
   }
 
@@ -222,10 +248,16 @@
     if (currentIndex === 0) return true;
 
     for (let i = 0; i < currentIndex; i++) {
-      if (!VideoProgress.isCompleted(videos[i].resourceId)) {
+      const progress = VideoProgress.get(videos[i].resourceId);
+      const isCompleted = VideoProgress.isCompleted(videos[i].resourceId);
+      console.log(`[VideoLock] Checking video #${i} (resourceId: ${videos[i].resourceId}) - Progress: ${progress}%, Completed: ${isCompleted}`);
+
+      if (!isCompleted) {
+        console.log(`[VideoLock] Video #${i} not completed, video #${currentIndex} should remain locked`);
         return false;
       }
     }
+    console.log(`[VideoLock] All previous videos completed for video #${currentIndex}`);
     return true;
   }
 
@@ -236,9 +268,17 @@
 
     // Process each video
     videos.forEach((videoData, index) => {
-      const shouldBeUnlocked = isPreviousVideosCompleted(videos, index);
       const container = videoData.container;
       const isCurrentlyLocked = container.querySelector('.video-lock-overlay') !== null;
+      const wasExplicitlyUnlocked = container.getAttribute('data-video-unlocked') === 'true';
+
+      // Never re-lock a video that was explicitly unlocked
+      if (wasExplicitlyUnlocked) {
+        console.log(`[VideoLock] Video #${index} was explicitly unlocked - keeping unlocked`);
+        return;
+      }
+
+      const shouldBeUnlocked = isPreviousVideosCompleted(videos, index);
 
       // Only change state if necessary to prevent re-locking unlocked videos
       if (shouldBeUnlocked && isCurrentlyLocked) {

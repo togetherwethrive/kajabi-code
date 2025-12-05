@@ -178,7 +178,7 @@
     // Check if button was already unlocked (from cache)
     if (ButtonStorage.get(videoId)) {
       console.log(`[Button Display] Button was previously unlocked for video: ${videoId}`);
-      showButton();
+      showButton(videoId);
       buttonShown = true;
       return; // No need to set up watchers
     }
