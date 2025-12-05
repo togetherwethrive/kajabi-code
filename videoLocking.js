@@ -133,13 +133,14 @@
           font-size: 24px;
           font-weight: 600;
           color: #fff !important;
+          opacity: 1 !important;
         }
 
         .video-lock-message p {
           margin: 0;
           font-size: 16px;
           color: #fff !important;
-          opacity: 0.8;
+          opacity: 0.9 !important;
         }
 
         .video-unlocked-badge {

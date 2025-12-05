@@ -1,6 +1,90 @@
 (function() {
   console.log("[Button Display] Script loaded");
 
+  // Get URL parameters
+  const parsedUrl = new URL(window.location.href);
+  const userId = parsedUrl.searchParams.get('userId');
+  const contactId = parsedUrl.searchParams.get('contactId');
+  const resourceId = parsedUrl.searchParams.get('resourceId');
+
+  // Helper function to process URL with parameters
+  function processUrlWithParams(url) {
+    if (!url) return url;
+
+    console.log('[Button Display] Processing URL:', url);
+    console.log('[Button Display] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
+
+    let processedUrl = url;
+    let hasPlaceholder = false;
+
+    // Check and replace square bracket placeholders [user-id], [userId], [contactId], [resourceId]
+    if (userId) {
+      if (processedUrl.includes('[user-id]') || processedUrl.includes('[userId]')) {
+        processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+        processedUrl = processedUrl.replace(/\[userId\]/g, userId);
+        hasPlaceholder = true;
+      }
+    }
+
+    if (contactId) {
+      if (processedUrl.includes('[contactId]')) {
+        processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+        hasPlaceholder = true;
+      }
+    }
+
+    if (resourceId) {
+      if (processedUrl.includes('[resourceId]')) {
+        processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+        hasPlaceholder = true;
+      }
+    }
+
+    // Check and replace curly brace placeholders {userId}, {contactId}, {resourceId}
+    if (userId && processedUrl.includes('{userId}')) {
+      processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+      hasPlaceholder = true;
+    }
+
+    if (contactId && processedUrl.includes('{contactId}')) {
+      processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+      hasPlaceholder = true;
+    }
+
+    if (resourceId && processedUrl.includes('{resourceId}')) {
+      processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+      hasPlaceholder = true;
+    }
+
+    // If no placeholders were found, append as query parameters
+    if (!hasPlaceholder) {
+      try {
+        const urlObj = new URL(processedUrl);
+
+        if (userId) {
+          urlObj.searchParams.set('userId', userId);
+        }
+
+        if (contactId) {
+          urlObj.searchParams.set('contactId', contactId);
+        }
+
+        // Only append resourceId if the URL doesn't already contain a numeric resourceId in the path
+        const hasResourceIdInPath = /\/\d{4,}\//.test(processedUrl);
+        if (resourceId && !hasResourceIdInPath) {
+          urlObj.searchParams.set('resourceId', resourceId);
+        }
+
+        processedUrl = urlObj.toString();
+      } catch (e) {
+        console.warn("[Button Display] Invalid URL format:", processedUrl, e);
+      }
+    }
+
+    console.log('[Button Display] Processed URL:', processedUrl);
+    return processedUrl;
+  }
+
   // Configuration
   const STORAGE_KEY = 'kajabi_button_unlocked';
 
@@ -173,6 +257,33 @@
 
     if (button) {
       console.log(`[Button Display] Button element found, current display: ${button.style.display}`);
+
+      // Process URL parameters in onclick handler
+      const onclickAttr = button.getAttribute('onclick');
+      if (onclickAttr) {
+        console.log('[Button Display] Found onclick handler, processing URL parameters');
+
+        // Extract URL from onclick (handles both href='' and href="")
+        const urlMatch = onclickAttr.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+        if (urlMatch && urlMatch[1]) {
+          const originalUrl = urlMatch[1];
+          const processedUrl = processUrlWithParams(originalUrl);
+
+          // Update onclick with processed URL
+          const newOnclick = onclickAttr.replace(originalUrl, processedUrl);
+          button.setAttribute('onclick', newOnclick);
+          console.log('[Button Display] ✓ URL parameters replaced in onclick handler');
+        }
+      }
+
+      // Also check and process href attribute if it exists
+      const href = button.getAttribute('href');
+      if (href) {
+        const processedHref = processUrlWithParams(href);
+        button.setAttribute('href', processedHref);
+        console.log('[Button Display] ✓ URL parameters replaced in href attribute');
+      }
+
       button.style.display = 'inline-block';
       console.log("[Button Display] ✅ Button is now visible!");
 
