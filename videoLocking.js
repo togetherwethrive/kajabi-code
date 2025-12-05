@@ -210,6 +210,7 @@
     const overlay = container.querySelector('.video-lock-overlay');
 
     if (overlay) {
+      console.log(`[VideoLock] 🔓 Removing overlay for resourceId: ${videoData.resourceId}`);
       overlay.remove();
       addUnlockedBadge(container);
     }
@@ -235,20 +236,33 @@
     // Process each video
     videos.forEach((videoData, index) => {
       const shouldBeUnlocked = isPreviousVideosCompleted(videos, index);
+      const container = videoData.container;
+      const isCurrentlyLocked = container.querySelector('.video-lock-overlay') !== null;
 
-      if (shouldBeUnlocked) {
+      // Only change state if necessary to prevent re-locking unlocked videos
+      if (shouldBeUnlocked && isCurrentlyLocked) {
+        // Video should be unlocked but is currently locked
+        console.log(`[VideoLock] Unlocking video #${index} (resourceId: ${videoData.resourceId})`);
         unlockVideo(videoData);
-      } else {
+      } else if (!shouldBeUnlocked && !isCurrentlyLocked) {
+        // Video should be locked but is currently unlocked
+        console.log(`[VideoLock] Locking video #${index} (resourceId: ${videoData.resourceId})`);
         lockVideo(videoData);
       }
+      // Otherwise, video is already in correct state - do nothing
     });
 
-    // Set up Wistia video tracking for progress updates
+    // Set up Wistia video tracking for progress updates (only once)
     setupWistiaTracking(videos);
   }
 
   // Track Wistia videos and update progress
+  let trackingSetup = false;
   function setupWistiaTracking(videos) {
+    // Only set up tracking once to prevent duplicate event bindings
+    if (trackingSetup) return;
+    trackingSetup = true;
+
     window._wq = window._wq || [];
 
     _wq.push({
@@ -268,10 +282,12 @@
 
           // Check if we should unlock next video
           if (percentage >= CONFIG.UNLOCK_THRESHOLD) {
+            console.log(`[VideoLock] Video ${resourceId} reached ${percentage}% - checking if next video should unlock`);
             const nextVideoIndex = videoData.index + 1;
             if (nextVideoIndex < videos.length) {
               const nextVideo = videos[nextVideoIndex];
               if (isPreviousVideosCompleted(videos, nextVideoIndex)) {
+                console.log(`[VideoLock] Unlocking next video (index ${nextVideoIndex})`);
                 unlockVideo(nextVideo);
               }
             }
