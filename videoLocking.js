@@ -82,17 +82,25 @@
     const videos = [];
     const wistiaContainers = document.querySelectorAll('[class*="wistia_embed"]');
 
-    wistiaContainers.forEach(container => {
+    console.log(`[VideoLock] Found ${wistiaContainers.length} Wistia container(s) in DOM`);
+
+    wistiaContainers.forEach((container, domIndex) => {
       const resourceId = container.getAttribute('data-resource-id');
+      console.log(`[VideoLock]   Container #${domIndex}: resourceId = ${resourceId}`);
+
       if (resourceId && isNumeric(resourceId)) {
         videos.push({
           container: container,
           resourceId: resourceId,
           index: videos.length
         });
+        console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1}`);
+      } else {
+        console.warn(`[VideoLock]     ✗ Skipped (missing or invalid resourceId)`);
       }
     });
 
+    console.log(`[VideoLock] Total videos with valid resourceId: ${videos.length}`);
     return videos;
   }
 
@@ -213,9 +221,11 @@
   // Lock a video
   function lockVideo(videoData) {
     const container = videoData.container;
+    console.log(`[VideoLock] 🔒 lockVideo called for resourceId: ${videoData.resourceId}`);
 
     // Make sure container is positioned relatively
     if (!container.closest('.video-container-wrapper')) {
+      console.log(`[VideoLock]   - Creating wrapper for container`);
       const wrapper = document.createElement('div');
       wrapper.className = 'video-container-wrapper';
       container.parentNode.insertBefore(wrapper, container);
@@ -223,9 +233,14 @@
     }
 
     // Add overlay if not present
-    if (!container.querySelector('.video-lock-overlay')) {
+    const existingOverlay = container.querySelector('.video-lock-overlay');
+    if (!existingOverlay) {
+      console.log(`[VideoLock]   - Creating and appending overlay`);
       const overlay = createLockOverlay(videoData);
       container.appendChild(overlay);
+      console.log(`[VideoLock]   ✓ Overlay added successfully`);
+    } else {
+      console.log(`[VideoLock]   - Overlay already exists, skipping`);
     }
   }
 
@@ -266,31 +281,39 @@
     const videos = getAllVideos();
     if (videos.length === 0) return;
 
+    console.log(`[VideoLock] ===== Initializing ${videos.length} video(s) =====`);
+
     // Process each video
     videos.forEach((videoData, index) => {
       const container = videoData.container;
       const isCurrentlyLocked = container.querySelector('.video-lock-overlay') !== null;
       const wasExplicitlyUnlocked = container.getAttribute('data-video-unlocked') === 'true';
 
+      console.log(`[VideoLock] Processing video #${index} (resourceId: ${videoData.resourceId})`);
+      console.log(`[VideoLock]   - Currently locked: ${isCurrentlyLocked}`);
+      console.log(`[VideoLock]   - Was explicitly unlocked: ${wasExplicitlyUnlocked}`);
+
       // Never re-lock a video that was explicitly unlocked
       if (wasExplicitlyUnlocked) {
-        console.log(`[VideoLock] Video #${index} was explicitly unlocked - keeping unlocked`);
+        console.log(`[VideoLock]   ✓ Keeping unlocked (was explicitly unlocked before)`);
         return;
       }
 
       const shouldBeUnlocked = isPreviousVideosCompleted(videos, index);
+      console.log(`[VideoLock]   - Should be unlocked: ${shouldBeUnlocked}`);
 
-      // Only change state if necessary to prevent re-locking unlocked videos
+      // Determine action
       if (shouldBeUnlocked && isCurrentlyLocked) {
         // Video should be unlocked but is currently locked
-        console.log(`[VideoLock] Unlocking video #${index} (resourceId: ${videoData.resourceId})`);
+        console.log(`[VideoLock]   → ACTION: Unlocking video #${index}`);
         unlockVideo(videoData);
       } else if (!shouldBeUnlocked && !isCurrentlyLocked) {
         // Video should be locked but is currently unlocked
-        console.log(`[VideoLock] Locking video #${index} (resourceId: ${videoData.resourceId})`);
+        console.log(`[VideoLock]   → ACTION: Locking video #${index}`);
         lockVideo(videoData);
+      } else {
+        console.log(`[VideoLock]   → ACTION: No change needed (already in correct state)`);
       }
-      // Otherwise, video is already in correct state - do nothing
     });
 
     // Set up Wistia video tracking for progress updates (only once)

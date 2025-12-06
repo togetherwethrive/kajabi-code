@@ -90,6 +90,17 @@
 
   // Create back buttons
   function createBackButtons() {
+    console.log('[Back Button] Creating buttons...');
+
+    // Check if buttons already exist
+    if (document.getElementById('back-button-top') || document.getElementById('back-button-bottom')) {
+      console.log('[Back Button] Buttons already exist, removing old ones');
+      const oldTop = document.getElementById('back-button-top');
+      const oldBottom = document.getElementById('back-button-bottom');
+      if (oldTop) oldTop.remove();
+      if (oldBottom) oldBottom.remove();
+    }
+
     // Create top button
     const topButton = document.createElement('button');
     topButton.id = 'back-button-top';
@@ -115,19 +126,24 @@
     // Insert top button at the beginning of body
     if (document.body.firstChild) {
       document.body.insertBefore(topButton, document.body.firstChild);
+      console.log('[Back Button] Top button inserted at beginning of body');
     } else {
       document.body.appendChild(topButton);
+      console.log('[Back Button] Top button appended to body');
     }
 
     // Insert bottom button before footer or at end of body
     const footer = document.querySelector('footer');
     if (footer) {
       footer.parentNode.insertBefore(bottomButton, footer);
+      console.log('[Back Button] Bottom button inserted before footer');
     } else {
       document.body.appendChild(bottomButton);
+      console.log('[Back Button] Bottom button appended to end of body');
     }
 
-    console.log('[Back Button] Top and bottom buttons created');
+    console.log('[Back Button] ✓ Top and bottom buttons created and inserted into DOM');
+    console.log('[Back Button] Buttons are hidden by default (display: none), will show after last video completion');
     return { topButton, bottomButton };
   }
 
@@ -140,14 +156,18 @@
 
   // Set up video completion tracking
   function setupVideoTracking(buttons) {
+    console.log('[Back Button] Setting up video tracking...');
+
     const videos = getAllVideos();
 
     if (videos.length === 0) {
-      console.log('[Back Button] No videos found on page - buttons will not be shown');
-      return;
+      console.warn('[Back Button] ⚠️ No Wistia video containers found on page');
+      console.log('[Back Button] Checking if Wistia API is available...');
+      console.log('[Back Button] window._wq exists:', typeof window._wq !== 'undefined');
+      console.log('[Back Button] Will wait for Wistia videos to load...');
+    } else {
+      console.log(`[Back Button] Found ${videos.length} Wistia video container(s) on page`);
     }
-
-    console.log(`[Back Button] Found ${videos.length} video(s) on page`);
 
     window._wq = window._wq || [];
     window._allVideos = window._allVideos || [];
@@ -155,7 +175,7 @@
 
     _wq.push({
       _all: function(video) {
-        console.log(`[Back Button] Video detected: ${video.hashedId()}`);
+        console.log(`[Back Button] ✓ Wistia video detected: ${video.hashedId()}`);
         window._allVideos.push(video);
 
         // Set up watcher after a short delay to ensure all videos are collected
@@ -163,12 +183,24 @@
           setTimeout(function() {
             if (!setupComplete) {
               setupComplete = true;
+              console.log(`[Back Button] Setting up watcher for last video (total: ${window._allVideos.length})`);
               setupLastVideoWatcher(buttons);
             }
           }, 2000);
         }
       }
     });
+
+    // Fallback: Check again after 5 seconds if no videos detected
+    setTimeout(function() {
+      if (!setupComplete && window._allVideos.length === 0) {
+        console.warn('[Back Button] ⚠️ No Wistia videos detected after 5 seconds');
+        console.log('[Back Button] This could mean:');
+        console.log('[Back Button] 1. Wistia API not loaded yet');
+        console.log('[Back Button] 2. No videos on this page');
+        console.log('[Back Button] 3. Videos are embedded differently');
+      }
+    }, 5000);
   }
 
   // Watch the last video for completion
@@ -256,18 +288,25 @@
 
   // Initialize
   function init() {
-    console.log('[Back Button] Initializing...');
+    console.log('[Back Button] ========================================');
+    console.log('[Back Button] Script Initializing...');
+    console.log('[Back Button] Document ready state:', document.readyState);
+    console.log('[Back Button] ========================================');
 
     if (document.readyState === 'loading') {
+      console.log('[Back Button] Waiting for DOMContentLoaded...');
       document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Back Button] DOMContentLoaded fired');
         injectStyles();
         const buttons = createBackButtons();
         setupVideoTracking(buttons);
       });
     } else {
+      console.log('[Back Button] DOM already loaded, proceeding immediately');
       injectStyles();
       const buttons = createBackButtons();
       // Wait a bit for Wistia to load
+      console.log('[Back Button] Waiting 1 second for Wistia API to load...');
       setTimeout(function() {
         setupVideoTracking(buttons);
       }, 1000);
