@@ -86,15 +86,26 @@
 
     wistiaContainers.forEach((container, domIndex) => {
       const resourceId = container.getAttribute('data-resource-id');
-      console.log(`[VideoLock]   Container #${domIndex}: resourceId = ${resourceId}`);
+      const lockVideo = container.getAttribute('data-lock-video');
+
+      console.log(`[VideoLock]   Container #${domIndex}: resourceId = ${resourceId}, data-lock-video = ${lockVideo}`);
 
       if (resourceId && isNumeric(resourceId)) {
+        // Check if video should be exempt from locking
+        const isAlwaysUnlocked = lockVideo === 'false';
+
         videos.push({
           container: container,
           resourceId: resourceId,
-          index: videos.length
+          index: videos.length,
+          isAlwaysUnlocked: isAlwaysUnlocked
         });
-        console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1}`);
+
+        if (isAlwaysUnlocked) {
+          console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1} (ALWAYS UNLOCKED - data-lock-video="false")`);
+        } else {
+          console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1} (normal locking behavior)`);
+        }
       } else {
         console.warn(`[VideoLock]     ✗ Skipped (missing or invalid resourceId)`);
       }
@@ -263,6 +274,13 @@
     if (currentIndex === 0) return true;
 
     for (let i = 0; i < currentIndex; i++) {
+      // Skip videos that are always unlocked (data-lock-video="false")
+      // They don't need to be completed for sequential unlocking
+      if (videos[i].isAlwaysUnlocked) {
+        console.log(`[VideoLock] Checking video #${i} (resourceId: ${videos[i].resourceId}) - SKIPPED (data-lock-video="false")`);
+        continue;
+      }
+
       const progress = VideoProgress.get(videos[i].resourceId);
       const isCompleted = VideoProgress.isCompleted(videos[i].resourceId);
       console.log(`[VideoLock] Checking video #${i} (resourceId: ${videos[i].resourceId}) - Progress: ${progress}%, Completed: ${isCompleted}`);
@@ -292,6 +310,18 @@
       console.log(`[VideoLock] Processing video #${index} (resourceId: ${videoData.resourceId})`);
       console.log(`[VideoLock]   - Currently locked: ${isCurrentlyLocked}`);
       console.log(`[VideoLock]   - Was explicitly unlocked: ${wasExplicitlyUnlocked}`);
+      console.log(`[VideoLock]   - Always unlocked (data-lock-video="false"): ${videoData.isAlwaysUnlocked}`);
+
+      // Check if video should always be unlocked (data-lock-video="false")
+      if (videoData.isAlwaysUnlocked) {
+        console.log(`[VideoLock]   ✓ Keeping unlocked (data-lock-video="false" - exempt from locking)`);
+        // Remove overlay if it exists
+        if (isCurrentlyLocked) {
+          console.log(`[VideoLock]   → ACTION: Removing overlay from always-unlocked video`);
+          unlockVideo(videoData);
+        }
+        return;
+      }
 
       // Never re-lock a video that was explicitly unlocked
       if (wasExplicitlyUnlocked) {

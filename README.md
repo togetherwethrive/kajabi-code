@@ -10,9 +10,10 @@ A comprehensive collection of JavaScript utilities for building interactive web 
 2. [Installation](#installation)
 3. [Script Descriptions](#script-descriptions)
 4. [Usage Examples](#usage-examples)
-5. [Configuration Reference](#configuration-reference)
-6. [API Endpoints](#api-endpoints)
-7. [Troubleshooting](#troubleshooting)
+5. [Test Pages & Testing Flow](#test-pages--testing-flow)
+6. [Configuration Reference](#configuration-reference)
+7. [API Endpoints](#api-endpoints)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -900,6 +901,429 @@ All scripts loaded!
 
 ---
 
+## Test Pages & Testing Flow
+
+### Overview
+
+Two comprehensive test pages are included to validate all functionality in a controlled environment:
+
+1. **previous-page.html** - Starting page (resourceId: 66949)
+2. **test-page.html** - Destination page (resourceId: 66950)
+
+These pages demonstrate the complete integration of all scripts and provide a testing environment for debugging.
+
+---
+
+### Test Page Architecture
+
+Both test pages include:
+- ✅ **2-3 Wistia videos** with sequential locking
+- ✅ **Video completion button** (#videoButton)
+- ✅ **Tracking button** (#ctaTrackingButton1 with data-cta-tracking-id="66950")
+- ✅ **Notification button** (#ctaButton1)
+- ✅ **Contact form** with full validation and GDPR consent
+- ✅ **Footer template** with user profile automation
+- ✅ **Back navigation buttons** (appear after last video completion)
+- ✅ **localStorage management tools** (clear progress/cache)
+- ✅ **Console debug logging** for all systems
+
+---
+
+### Test Flow Diagram
+
+```
+┌─────────────────────────────────────────┐
+│ previous-page.html (resourceId: 66949)  │
+│ - 2 videos (66949001, 66949002)         │
+│ - Test all features                     │
+└──────────────┬──────────────────────────┘
+               │
+               │ Click tracking/notification/
+               │ completion button
+               ↓
+┌─────────────────────────────────────────┐
+│ test-page.html (resourceId: 66950)      │
+│ - 3 videos (10001, 10002, 10003)        │
+│ - Test all features                     │
+└──────────────┬──────────────────────────┘
+               │
+               │ Click "Previous Lesson" back button
+               │ (appears after last video completion)
+               ↓
+┌─────────────────────────────────────────┐
+│ Back to previous-page.html              │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Getting Started with Test Pages
+
+**Step 1: Start with Previous Page**
+
+Open: `previous-page.html?resourceId=66949&userId=308889&contactId=20274267`
+
+This initializes the test environment with the required parameters.
+
+**Step 2: Test Features on Previous Page**
+
+1. **Video Locking**
+   - First video (66949001) should be unlocked
+   - Second video (66949002) should be locked with overlay
+   - Watch first video to 90% → second video unlocks
+
+2. **Video Completion Button**
+   - Hidden initially
+   - Appears when last video reaches 90%
+   - Click to navigate to test-page.html
+
+3. **Tracking Button**
+   - Logs activity with trackingId 66950
+   - Passes parameters to next page
+   - Check console for [Button Tracking] logs
+
+4. **Notification Button**
+   - Sends email notification
+   - Navigates to test-page.html
+   - Check console for [CTA Notification] logs
+
+5. **Contact Form**
+   - Fill all required fields
+   - Check/uncheck GDPR consent
+   - Submit and watch validation logs
+   - Check console for VALIDATION SCRIPT logs
+
+6. **Footer Automation**
+   - Profile image loads from API
+   - User name, email, phone populate
+   - Social links appear (if available)
+   - Booking link appears (if available)
+
+**Step 3: Navigate to Test Page**
+
+Click any navigation button to go to test-page.html. Parameters should be maintained in URL.
+
+**Step 4: Test Features on Test Page**
+
+Same features as previous page, but with 3 videos instead of 2:
+- Videos: 10001 (unlocked), 10002 (locked), 10003 (locked)
+- Video locking sequence: Watch video 1 → unlocks video 2 → watch video 2 → unlocks video 3
+- Completion button appears after video 3 reaches 90%
+
+**Step 5: Test Back Button**
+
+1. Watch the last video (video 3) to 90% or end
+2. Two "Previous Lesson" buttons appear:
+   - One at top of page
+   - One above footer
+3. Click either button → navigates back to previous-page.html
+4. Check console for [Back Button] logs
+
+---
+
+### Required URL Parameters
+
+Both test pages require these parameters:
+
+| Parameter | Value (for testing) | Purpose |
+|-----------|---------------------|---------|
+| `userId` | `308889` | User identification for API calls |
+| `contactId` | `20274267` | Contact tracking and profile loading |
+| `resourceId` | `66949` (previous) or `66950` (test) | Page resource identification |
+
+**Quick Links**:
+- Previous Page: `previous-page.html?resourceId=66949&userId=308889&contactId=20274267`
+- Test Page: `test-page.html?resourceId=66950&userId=308889&contactId=20274267`
+
+---
+
+### Console Debugging
+
+Both test pages include comprehensive console logging. Open Developer Tools (F12) → Console to see:
+
+**Video Locking Logs** (`[VideoLock]`):
+```
+[VideoLock] Found 3 Wistia container(s) in DOM
+[VideoLock] Total videos with valid resourceId: 3
+[VideoLock] Processing video #0 (resourceId: 10001)
+[VideoLock] 🔓 Removing overlay for resourceId: 10002
+```
+
+**Back Button Logs** (`[Back Button]`):
+```
+[Back Button] Script loaded
+[Back Button] ✓ Wistia video detected: abc123
+[Back Button] ✓ Watching last video: abc123 (3 total videos)
+[Back Button] Last video reached 90% - showing buttons
+[Back Button] ✅ Both buttons are now visible!
+```
+
+**Button Display Logs** (`[Button Display]`):
+```
+[Button Display] Video detected: abc123
+[Button Display] ✓ Identified last video: abc123 (3 total videos on page)
+[Button Display] Video abc123 started playing - monitoring progress
+[Button Display] Progress check: 92%
+[Button Display] 90% threshold reached - showing button
+[Button Display] ✅ Button is now visible!
+```
+
+**Button Tracking Logs** (`[Button Tracking]`):
+```
+[Button Tracking] Processing button: ctaTrackingButton1
+[Button Tracking] Processing URL: test-page.html?resourceId=66950&userId=[userId]
+[Button Tracking] Processed URL: test-page.html?resourceId=66950&userId=308889&contactId=20274267
+```
+
+**Footer Automation Logs**:
+```
+User details fetched successfully
+Profile populated for user: 308889
+```
+
+**Form Validation Logs** (`VALIDATION SCRIPT`):
+```
+═══════════════════════════════════════════════════
+VALIDATION STARTED
+═══════════════════════════════════════════════════
+✓ First Name: PASSED (John)
+✓ Last Name: PASSED (Doe)
+✓ Email: PASSED (john@example.com)
+✓ Phone: PASSED (1234567890)
+✅ GDPR: PASSED (checked)
+✅✅✅ VALIDATION PASSED ✅✅✅
+```
+
+---
+
+### LocalStorage Management
+
+Both test pages include buttons to manage cached data:
+
+**Clear Video Progress** - Removes `kajabi_video_progress`
+```javascript
+// Resets all video unlock states
+localStorage.removeItem('kajabi_video_progress');
+```
+
+**Clear Button Cache** - Removes `kajabi_button_unlocked`
+```javascript
+// Resets video completion button state
+localStorage.removeItem('kajabi_button_unlocked');
+```
+
+**Clear All** - Removes all cached data
+```javascript
+// Complete reset for fresh testing
+localStorage.removeItem('kajabi_video_progress');
+localStorage.removeItem('kajabi_button_unlocked');
+```
+
+**When to Clear Cache**:
+- Starting fresh testing session
+- Video unlock states not behaving correctly
+- Completion button not hiding after page reload
+- Testing specific unlock scenarios
+
+---
+
+### URL Parameter Passing Test
+
+Both test pages validate that parameters are correctly passed between pages:
+
+**Test Scenario 1: Tracking Button**
+```html
+<!-- On previous-page.html -->
+<button id="ctaTrackingButton1"
+        data-cta-tracking-id="66950"
+        onclick="window.location.href='test-page.html?resourceId=66950&userId=[userId]&contactId=[contactId]';">
+  → Go to Next Page (Tracking)
+</button>
+
+<!-- Expected behavior: -->
+<!-- Current URL: previous-page.html?userId=308889&contactId=20274267 -->
+<!-- Result URL: test-page.html?resourceId=66950&userId=308889&contactId=20274267 -->
+```
+
+**Test Scenario 2: Notification Button**
+```html
+<!-- Same parameter passing as tracking button -->
+<!-- Sends email notification, then navigates with parameters -->
+```
+
+**Test Scenario 3: Video Completion Button**
+```html
+<!-- Shows when last video reaches 90% -->
+<!-- Parameters automatically processed by showButtonOnVideoCompletion.js -->
+```
+
+**Validation Checklist**:
+- [ ] Parameters appear in browser address bar
+- [ ] Console shows processed URLs with actual values
+- [ ] Footer loads user data from userId
+- [ ] Video tracking sends correct resourceId
+- [ ] Form submission includes resourceId
+
+---
+
+### Feature Test Checklist
+
+Use this checklist to validate all functionality:
+
+#### Video Locking System
+- [ ] First video unlocked on page load
+- [ ] Subsequent videos show lock overlay
+- [ ] Lock overlay displays "Video Locked" message
+- [ ] Lock overlay shows lock icon
+- [ ] Watching video to 90% unlocks next video
+- [ ] Unlocked badge appears on completed videos
+- [ ] Progress persists after page reload
+- [ ] Clear progress button resets all locks
+
+#### Video Completion Button
+- [ ] Button hidden on page load
+- [ ] Last video identified correctly (check console)
+- [ ] Button appears when last video reaches 90%
+- [ ] Button appears when last video ends
+- [ ] Button click navigates with parameters
+- [ ] Button state cached in localStorage
+- [ ] Button remains visible after page reload
+
+#### Back Navigation Buttons
+- [ ] Buttons hidden on page load
+- [ ] No buttons if no video completion
+- [ ] Top button appears after last video 90%
+- [ ] Bottom button appears after last video 90%
+- [ ] Both buttons use "Previous Lesson" text
+- [ ] Clicking button navigates back in history
+- [ ] Buttons styled consistently
+
+#### Tracking Button
+- [ ] Button has data-cta-tracking-id attribute
+- [ ] Click logs activity to console
+- [ ] Email notification sent (check API)
+- [ ] Navigation includes all URL parameters
+- [ ] Placeholders replaced correctly
+
+#### Notification Button
+- [ ] Button sends notification email
+- [ ] Click logs to console
+- [ ] Navigation includes all URL parameters
+- [ ] Works without contactId (graceful degradation)
+
+#### Contact Form
+- [ ] Required field validation works
+- [ ] Email format validation works
+- [ ] GDPR checkbox required
+- [ ] Error messages display correctly
+- [ ] Validation blocks API call until passed
+- [ ] Console shows detailed validation logs
+- [ ] Success triggers contactForm.js load
+
+#### Footer Automation
+- [ ] Profile image loads from API
+- [ ] First and last name populate
+- [ ] Email link works with mailto:
+- [ ] Phone link works with tel:
+- [ ] Booking link appears if available
+- [ ] Social links appear if available
+- [ ] Missing data gracefully handled
+
+---
+
+### Testing Different Scenarios
+
+**Scenario 1: New User (Fresh State)**
+1. Clear all localStorage
+2. Open previous-page.html with parameters
+3. Only first video should be unlocked
+4. Watch videos in sequence
+5. Verify progressive unlocking
+
+**Scenario 2: Returning User (Cached Progress)**
+1. Complete first video
+2. Reload page
+3. First video should have "Unlocked" badge
+4. Second video should be unlocked
+5. Progress should persist
+
+**Scenario 3: Missing Parameters**
+1. Open page without userId
+2. Video locking should be disabled (check console)
+3. Tracking features should gracefully fail
+4. Footer should show default/loading state
+
+**Scenario 4: Back Button Flow**
+1. Start on previous-page.html
+2. Navigate to test-page.html via button
+3. Complete last video on test-page.html
+4. Back buttons should appear
+5. Click back button → returns to previous-page.html
+6. Browser back button should also work
+
+**Scenario 5: Parameter Passing**
+1. Start with full parameters
+2. Click tracking button → verify parameters passed
+3. Check browser address bar
+4. Check footer loads correct user data
+5. Check console for processed URLs
+
+---
+
+### Common Issues & Solutions
+
+**Issue**: Videos don't lock
+- **Check**: Console for [VideoLock] messages
+- **Check**: userId parameter is present and numeric
+- **Solution**: Add ?userId=308889 to URL
+
+**Issue**: Back button doesn't appear
+- **Check**: Console for [Back Button] messages
+- **Check**: Last video reached 90%
+- **Check**: Wistia API loaded
+- **Solution**: Wait for video completion, check console logs
+
+**Issue**: Completion button doesn't show
+- **Check**: Console for [Button Display] messages
+- **Check**: Button has id="videoButton"
+- **Check**: Button has display: none initially
+- **Solution**: Verify last video reaches 90%
+
+**Issue**: Footer doesn't populate
+- **Check**: userId parameter present
+- **Check**: Console for API errors
+- **Check**: Network tab for API call
+- **Solution**: Verify userId=308889 in URL
+
+**Issue**: Parameters not passing
+- **Check**: Console for processed URLs
+- **Check**: Button href or onclick attribute
+- **Solution**: Verify button scripts loaded (buttonTracking.js, ctaButtonNotification.js, showButtonOnVideoCompletion.js)
+
+---
+
+### Files Included
+
+**Test Page Files**:
+- `previous-page.html` - Starting test page (2 videos)
+- `test-page.html` - Destination test page (3 videos)
+
+**Required Scripts** (loaded by test pages):
+- `videoLocking.js`
+- `showButtonOnVideoCompletion.js`
+- `backButton.js`
+- `buttonTracking.js`
+- `ctaButtonNotification.js`
+- `footerAutomation.js`
+- `formValidation.js`
+- jQuery 3.6.0
+- Font Awesome 4.7.0
+- Wistia E-v1.js
+
+**All scripts and dependencies are loaded automatically on test pages.**
+
+---
+
 ## Configuration Reference
 
 ### URL Parameters
@@ -1384,10 +1808,12 @@ For issues or questions:
 11. `mainCodeInitializer.js` - Master dependency loader
 12. *(contactForm.js dynamically loaded after validation)*
 
-### HTML Templates (1)
+### HTML Templates (3)
 1. `footer-template.html` - Complete footer implementation example
+2. `previous-page.html` - Test page with 2 videos (resourceId: 66949)
+3. `test-page.html` - Test page with 3 videos (resourceId: 66950)
 
-### Total Files: 13
+### Total Files: 15
 
 ---
 

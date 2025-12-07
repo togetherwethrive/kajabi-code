@@ -195,6 +195,18 @@
     </p>
   </div>
 
+  <div class="info-box" style="background: #e7f3ff; border-color: #2196F3;">
+    <h3 style="color: #0d47a1;">⭐ NEW: data-lock-video Attribute</h3>
+    <p style="color: #0d47a1; margin: 10px 0;">
+      <strong>Video 2</strong> on this page demonstrates the <code style="background: #fff; color: #0d47a1;">data-lock-video="false"</code> attribute.<br>
+      <strong>Behavior:</strong> Videos with this attribute are always unlocked, regardless of their position or completion of previous videos.<br>
+      <strong>Use cases:</strong> Bonus content, previews, optional material, or any video that shouldn't follow sequential unlocking.
+    </p>
+    <p style="color: #0d47a1; margin: 10px 0; font-size: 14px;">
+      💡 <strong>Note:</strong> Video 3 unlocks after Video 1 is complete. Video 2 is skipped in the sequential check because it has <code style="background: #fff; color: #0d47a1;">data-lock-video="false"</code>.
+    </p>
+  </div>
+
   <div class="info-box">
     <h3>📋 Test Information</h3>
     <p><strong>Current URL Parameters:</strong></p>
@@ -242,13 +254,14 @@
 
   <!-- Video 2 -->
   <div class="video-section">
-    <h2>📹 Video 2 - Main Content (Should be LOCKED initially)</h2>
+    <h2>📹 Video 2 - Bonus Content (ALWAYS UNLOCKED - data-lock-video="false")</h2>
     <div class="video-container">
       <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0; position:relative;">
         <div class="wistia_responsive_wrapper" style="height:100%; left:0; position:absolute; top:0; width:100%;">
           <div class="wistia_embed wistia_async_pzzpg99too seo=true videoFoam=true"
                data-resource-id="10002"
                data-autoPlay="false"
+               data-lock-video="false"
                style="height:100%;position:relative;width:100%">
             <div class="wistia_swatch"
                  style="height:100%; left:0; opacity:1; overflow:hidden; position:absolute; top:0; transition:opacity 200ms; width:100%; cursor:pointer;"
@@ -263,7 +276,8 @@
       </div>
     </div>
     <p style="color: #666; font-size: 14px; margin-top: 10px;">
-      This should be locked until Video 1 reaches 90% completion.
+      ⭐ This video has <code>data-lock-video="false"</code> - it's always unlocked regardless of position!
+      This is useful for bonus content, previews, or optional videos that don't need to follow the sequential flow.
     </p>
   </div>
 
@@ -290,7 +304,7 @@
       </div>
     </div>
     <p style="color: #666; font-size: 14px; margin-top: 10px;">
-      This should be locked until Video 2 reaches 90% completion.
+      This should be locked until Video 1 reaches 90% completion. Note: Video 2 is skipped in the sequential check because it has <code>data-lock-video="false"</code>.
     </p>
   </div>
 
