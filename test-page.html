@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Locking Test Page</title>
+
+  <!-- Google Fonts for Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Wistia API -->
+  <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
+
+  <style>
+    body {
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #291d5c;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .video-section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-section h2 {
+      color: #291d5c;
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .video-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .wistia_responsive_padding {
+      padding: 56.25% 0 0 0;
+      position: relative;
+    }
+
+    .wistia_responsive_wrapper {
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 100%;
+    }
+
+    .wistia_embed {
+      height: 100%;
+      position: relative;
+      width: 100%;
+    }
+
+    .info-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .info-box h3 {
+      margin-top: 0;
+      color: #856404;
+    }
+
+    .info-box p {
+      margin: 5px 0;
+      color: #856404;
+    }
+
+    .info-box code {
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+
+    .button-section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #videoButton {
+      background-color: #291d5c;
+      color: #fff;
+      min-width: 100px;
+      border: 2px solid #291d5c;
+      border-radius: 4px;
+      padding: 12px 30px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.3s ease;
+      position: relative;
+      display: none;
+      margin-top: 30px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    #videoButton:hover {
+      background-color: #fff;
+      color: #291d5c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .console-notice {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #0c5460;
+    }
+
+    .console-notice strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    footer {
+      background: #291d5c;
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      margin-top: 50px;
+      border-radius: 8px;
+    }
+
+    .clear-storage-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 10px 5px;
+    }
+
+    .clear-storage-btn:hover {
+      background: #c82333;
+    }
+
+    #gdprError.show {
+      display: block !important;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Video Locking & Back Button Test Page</h1>
+
+  <div class="console-notice">
+    <strong>🔍 Open Browser Console (F12) to see debug logs!</strong>
+    Look for messages starting with:
+    <ul style="margin: 10px 0;">
+      <li><code>[VideoLock]</code> - Video locking system</li>
+      <li><code>[Back Button]</code> - Back button system</li>
+      <li><code>[Button Display]</code> - Video completion button</li>
+      <li><code>[Button Tracking]</code> - CTA button tracking</li>
+      <li><code>[CTA Notification]</code> - Email notifications</li>
+      <li><code>[Footer Automation]</code> - User profile loading</li>
+      <li><code>VALIDATION SCRIPT</code> - Form validation</li>
+    </ul>
+  </div>
+
+  <div class="info-box" style="background: #fff3cd; border-color: #ffc107;">
+    <h3 style="color: #856404;">🔙 Testing the Back Button:</h3>
+    <p style="color: #856404; margin: 10px 0;">
+      To test the back button functionality, you need browser history. Open
+      <a href="previous-page.html?resourceId=66949&userId=308889&contactId=20274267" style="color: #856404; font-weight: bold; text-decoration: underline;">previous-page.html</a>
+      first, then click the link to navigate to this page. That way, the "Previous Lesson" buttons will work correctly.
+    </p>
+  </div>
+
+  <div class="info-box">
+    <h3>📋 Test Information</h3>
+    <p><strong>Current URL Parameters:</strong></p>
+    <p>userId: <code id="current-userId">Not set</code></p>
+    <p>contactId: <code id="current-contactId">Not set</code></p>
+    <p>resourceId: <code id="current-resourceId">Not set</code></p>
+    <p style="margin-top: 15px; font-size: 14px;">
+      <strong>💡 Required parameters for testing:</strong><br>
+      Add <code>?resourceId=66950&userId=308889&contactId=20274267</code> to the URL above<br>
+      <strong>Quick link:</strong> <a href="test-page.html?resourceId=66950&userId=308889&contactId=20274267" style="color: #291d5c; font-weight: bold;">Click here to load with test parameters</a>
+    </p>
+    <div style="margin-top: 10px;">
+      <button class="clear-storage-btn" onclick="clearVideoProgress()">Clear Video Progress</button>
+      <button class="clear-storage-btn" onclick="clearButtonUnlock()">Clear Button Cache</button>
+      <button class="clear-storage-btn" onclick="clearAllStorage()">Clear All</button>
+    </div>
+  </div>
+
+  <!-- Video 1 -->
+  <div class="video-section">
+    <h2>📹 Video 1 - Introduction (Should be UNLOCKED)</h2>
+    <div class="video-container">
+      <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0; position:relative;">
+        <div class="wistia_responsive_wrapper" style="height:100%; left:0; position:absolute; top:0; width:100%;">
+          <div class="wistia_embed wistia_async_h5ce2r62ni seo=true videoFoam=true"
+               data-resource-id="10001"
+               data-autoPlay="false"
+               style="height:100%;position:relative;width:100%">
+            <div class="wistia_swatch"
+                 style="height:100%; left:0; opacity:1; overflow:hidden; position:absolute; top:0; transition:opacity 200ms; width:100%; cursor:pointer;"
+                 onclick="this.style.display='none'; this.parentNode.querySelector('.wistia_embed').click();">
+              <img src="https://fast.wistia.com/embed/medias/h5ce2r62ni/swatch"
+                   style="filter:blur(0); height:100%; object-fit:cover; width:100%;"
+                   alt="Video Thumbnail"
+                   aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="color: #666; font-size: 14px; margin-top: 10px;">
+      This is the first video. It should always be unlocked.
+    </p>
+  </div>
+
+  <!-- Video 2 -->
+  <div class="video-section">
+    <h2>📹 Video 2 - Main Content (Should be LOCKED initially)</h2>
+    <div class="video-container">
+      <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0; position:relative;">
+        <div class="wistia_responsive_wrapper" style="height:100%; left:0; position:absolute; top:0; width:100%;">
+          <div class="wistia_embed wistia_async_pzzpg99too seo=true videoFoam=true"
+               data-resource-id="10002"
+               data-autoPlay="false"
+               style="height:100%;position:relative;width:100%">
+            <div class="wistia_swatch"
+                 style="height:100%; left:0; opacity:1; overflow:hidden; position:absolute; top:0; transition:opacity 200ms; width:100%; cursor:pointer;"
+                 onclick="this.style.display='none'; this.parentNode.querySelector('.wistia_embed').click();">
+              <img src="https://fast.wistia.com/embed/medias/pzzpg99too/swatch"
+                   style="filter:blur(0); height:100%; object-fit:cover; width:100%;"
+                   alt="Video Thumbnail"
+                   aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="color: #666; font-size: 14px; margin-top: 10px;">
+      This should be locked until Video 1 reaches 90% completion.
+    </p>
+  </div>
+
+  <!-- Video 3 -->
+  <div class="video-section">
+    <h2>📹 Video 3 - Advanced (Should be LOCKED initially)</h2>
+    <div class="video-container">
+      <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0; position:relative;">
+        <div class="wistia_responsive_wrapper" style="height:100%; left:0; position:absolute; top:0; width:100%;">
+          <div class="wistia_embed wistia_async_h5ce2r62ni seo=true videoFoam=true"
+               data-resource-id="10003"
+               data-autoPlay="false"
+               style="height:100%;position:relative;width:100%">
+            <div class="wistia_swatch"
+                 style="height:100%; left:0; opacity:1; overflow:hidden; position:absolute; top:0; transition:opacity 200ms; width:100%; cursor:pointer;"
+                 onclick="this.style.display='none'; this.parentNode.querySelector('.wistia_embed').click();">
+              <img src="https://fast.wistia.com/embed/medias/h5ce2r62ni/swatch"
+                   style="filter:blur(0); height:100%; object-fit:cover; width:100%;"
+                   alt="Video Thumbnail"
+                   aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="color: #666; font-size: 14px; margin-top: 10px;">
+      This should be locked until Video 2 reaches 90% completion.
+    </p>
+  </div>
+
+  <!-- Video Completion Button -->
+  <div class="button-section">
+    <h2>🎯 Video Completion Button Test</h2>
+    <p style="color: #666;">This button should appear when the last video (Video 3) reaches 90% or ends.</p>
+    <button
+      id="videoButton"
+      onclick="window.location.href='https://www.twtmentorship.com/next-page?resourceId=[resourceId]&userId=[userId]&contactId=[contactId]';">
+      Continue to Next Lesson →
+    </button>
+  </div>
+
+  <!-- Tracking Button Test -->
+  <div class="button-section">
+    <h2>📊 Tracking Button Test</h2>
+    <p style="color: #666;">This button tracks activity and navigates to previous-page.html with parameters.</p>
+    <button
+      id="ctaTrackingButton1"
+      data-cta-tracking-id="66950"
+      onclick="window.location.href='previous-page.html?resourceId=66949&userId=[userId]&contactId=[contactId]';"
+      style="background-color: #291d5c; color: #fff; border: 2px solid #291d5c; border-radius: 4px; padding: 12px 30px; font-size: 18px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: all 0.3s ease; display: inline-block;">
+      ← Go to Previous Page (Tracking)
+    </button>
+  </div>
+
+  <!-- Notification Button Test -->
+  <div class="button-section">
+    <h2>🔔 Notification Button Test</h2>
+    <p style="color: #666;">This button sends email notification and navigates to previous-page.html.</p>
+    <button
+      id="ctaButton1"
+      onclick="window.location.href='previous-page.html?resourceId=66949&userId=[userId]&contactId=[contactId]';"
+      style="background-color: #10b981; color: #fff; border: 2px solid #10b981; border-radius: 4px; padding: 12px 30px; font-size: 18px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: all 0.3s ease; display: inline-block;">
+      ← Go to Previous Page (Notification)
+    </button>
+  </div>
+
+  <!-- Contact Form Test -->
+  <div class="button-section">
+    <h2>📝 Contact Form Test</h2>
+    <p style="color: #666; margin-bottom: 20px;">Test form validation with GDPR consent.</p>
+    <form id="contactForm" style="max-width: 500px; margin: 0 auto;">
+      <div style="margin-bottom: 15px;">
+        <label for="contactFirstName" style="display: block; margin-bottom: 5px; font-weight: 600;">First Name *</label>
+        <input type="text" id="contactFirstName" name="firstName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Montserrat', sans-serif;">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="contactLastName" style="display: block; margin-bottom: 5px; font-weight: 600;">Last Name *</label>
+        <input type="text" id="contactLastName" name="lastName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Montserrat', sans-serif;">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="contactEmail" style="display: block; margin-bottom: 5px; font-weight: 600;">Email *</label>
+        <input type="email" id="contactEmail" name="email" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Montserrat', sans-serif;">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="contactPhone" style="display: block; margin-bottom: 5px; font-weight: 600;">Phone *</label>
+        <input type="tel" id="contactPhone" name="phone" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Montserrat', sans-serif;">
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display: flex; align-items: flex-start; cursor: pointer;">
+          <input type="checkbox" id="gdprConsent" name="gdprConsent" style="margin-right: 10px; margin-top: 3px;">
+          <span style="font-size: 14px;">I agree to the GDPR and CCPA Terms and Conditions *</span>
+        </label>
+        <div id="gdprError" style="color: #dc3545; font-size: 14px; margin-top: 5px; display: none;">You must agree to the terms and conditions</div>
+      </div>
+      <button type="submit" id="contactFormSubmitBtn" style="background-color: #291d5c; color: #fff; border: 2px solid #291d5c; border-radius: 4px; padding: 12px 30px; font-size: 18px; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: all 0.3s ease; width: 100%;">
+        Submit Contact Form
+      </button>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 900px; margin: 0 auto;">
+      <h3>Footer - User Profile Test</h3>
+      <p style="margin-bottom: 30px;">The back button should appear above this footer after completing the last video.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; text-align: left;">
+        <!-- Profile Image -->
+        <div>
+          <h4 style="margin-top: 0;">Profile Image</h4>
+          <img id="profileImage" src="https://rfres.com/assets/img/icon-user-default.png" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+        </div>
+
+        <!-- User Info -->
+        <div>
+          <h4 style="margin-top: 0;">User Information</h4>
+          <p><strong>Name:</strong> <span id="firstName">Loading...</span> <span id="lastName"></span></p>
+          <p><strong>Email:</strong> <a id="email" href="mailto:test@example.com" style="color: white; text-decoration: underline;">test@example.com</a></p>
+          <p><strong>Phone:</strong> <a id="phoneNumber" href="tel:1234567890" style="color: white; text-decoration: underline;">123-456-7890</a></p>
+        </div>
+
+        <!-- Booking Link -->
+        <div>
+          <h4 style="margin-top: 0;">Booking</h4>
+          <a id="customBookingLink" href="#" style="background: white; color: #291d5c; padding: 10px 20px; border-radius: 4px; text-decoration: none; display: inline-block; font-weight: 600; transition: all 0.3s ease;">
+            <span class="fa fa-calendar"></span> Book Appointment
+          </a>
+          <p class="alternate-text" style="font-size: 14px; margin-top: 10px;">No booking link available</p>
+        </div>
+      </div>
+
+      <!-- Social Links -->
+      <div class="footer-social-links" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+        <h4>Connect</h4>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+          <a id="facebookUrl" href="#" class="footer-btn-socials" style="color: white; text-decoration: none; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="fa fa-facebook"></span><span>Facebook</span>
+          </a>
+          <a id="twitterUrl" href="#" class="footer-btn-socials" style="color: white; text-decoration: none; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="fa fa-twitter"></span><span>Twitter</span>
+          </a>
+          <a id="linkedinUrl" href="#" class="footer-btn-socials" style="color: white; text-decoration: none; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="fa fa-linkedin"></span><span>LinkedIn</span>
+          </a>
+          <a id="instagramUrl" href="#" class="footer-btn-socials" style="color: white; text-decoration: none; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="fa fa-instagram"></span><span>Instagram</span>
+          </a>
+        </div>
+      </div>
+
+      <p style="font-size: 14px; opacity: 0.8; margin-top: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Test Page © 2025</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Display current URL parameters
+    function updateURLParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      document.getElementById('current-userId').textContent = urlParams.get('userId') || 'Not set';
+      document.getElementById('current-contactId').textContent = urlParams.get('contactId') || 'Not set';
+      document.getElementById('current-resourceId').textContent = urlParams.get('resourceId') || 'Not set';
+    }
+
+    // Clear video progress
+    function clearVideoProgress() {
+      localStorage.removeItem('kajabi_video_progress');
+      console.log('✓ Video progress cleared');
+      alert('Video progress cleared! Reload the page to see fresh state.');
+    }
+
+    // Clear button unlock cache
+    function clearButtonUnlock() {
+      localStorage.removeItem('kajabi_button_unlocked');
+      console.log('✓ Button unlock cache cleared');
+      alert('Button unlock cache cleared! Reload the page.');
+    }
+
+    // Clear all storage
+    function clearAllStorage() {
+      localStorage.removeItem('kajabi_video_progress');
+      localStorage.removeItem('kajabi_button_unlocked');
+      console.log('✓ All storage cleared');
+      alert('All storage cleared! Reload the page to start fresh.');
+    }
+
+    // Update on load
+    updateURLParams();
+
+    // Log initial state
+    console.log('================================================');
+    console.log('🧪 TEST PAGE LOADED');
+    console.log('================================================');
+    console.log('Current localStorage:');
+    console.log('  kajabi_video_progress:', localStorage.getItem('kajabi_video_progress'));
+    console.log('  kajabi_button_unlocked:', localStorage.getItem('kajabi_button_unlocked'));
+    console.log('================================================');
+  </script>
+
+  <!-- Load jQuery and Font Awesome (required for footer and buttons) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <!-- Load the scripts -->
+  <script src="videoLocking.js"></script>
+  <script src="showButtonOnVideoCompletion.js"></script>
+  <script src="backButton.js"></script>
+  <script src="buttonTracking.js"></script>
+  <script src="ctaButtonNotification.js"></script>
+  <script src="footerAutomation.js"></script>
+  <script src="formValidation.js"></script>
+
+</body>
+</html>
