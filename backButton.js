@@ -9,7 +9,38 @@
     BUTTON_COLOR: '#291d5c',
     BUTTON_TEXT_COLOR: '#fff',
     TOP_BUTTON_MARGIN: '20px', // Margin from top of page
-    BOTTOM_BUTTON_MARGIN: '30px' // Margin above footer
+    BOTTOM_BUTTON_MARGIN: '30px', // Margin above footer
+    STORAGE_KEY: 'kajabi_back_button_shown'
+  };
+
+  // Get URL parameters for unique storage key
+  const urlParams = new URLSearchParams(window.location.search);
+  const resourceId = urlParams.get('resourceId') || window.location.pathname;
+
+  // Storage management for back button visibility
+  const BackButtonStorage = {
+    get: function(pageId) {
+      try {
+        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+        const shown = data ? JSON.parse(data) : {};
+        return shown[pageId] || false;
+      } catch (e) {
+        console.warn('[Back Button] Error reading visibility state:', e);
+        return false;
+      }
+    },
+
+    set: function(pageId, isShown) {
+      try {
+        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+        const shownStates = data ? JSON.parse(data) : {};
+        shownStates[pageId] = isShown;
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(shownStates));
+        console.log(`[Back Button] Visibility state saved for page: ${pageId}`);
+      } catch (e) {
+        console.warn('[Back Button] Error saving visibility state:', e);
+      }
+    }
   };
 
   // Check if Wistia videos exist on page
@@ -148,15 +179,28 @@
   }
 
   // Show both buttons
-  function showButtons(buttons) {
+  function showButtons(buttons, saveState = true) {
     buttons.topButton.style.display = 'block';
     buttons.bottomButton.style.display = 'block';
     console.log('[Back Button] ✅ Both buttons are now visible!');
+
+    // Save visibility state to localStorage
+    if (saveState) {
+      BackButtonStorage.set(resourceId, true);
+      console.log('[Back Button] State saved to localStorage');
+    }
   }
 
   // Set up video completion tracking
   function setupVideoTracking(buttons) {
     console.log('[Back Button] Setting up video tracking...');
+
+    // Check if buttons were already shown (from cache)
+    if (BackButtonStorage.get(resourceId)) {
+      console.log('[Back Button] Buttons were previously shown for this page (from cache)');
+      showButtons(buttons, false); // Show without re-saving
+      return; // No need to set up watchers
+    }
 
     const videos = getAllVideos();
 

@@ -221,6 +221,7 @@
     <div style="margin-top: 10px;">
       <button class="clear-storage-btn" onclick="clearVideoProgress()">Clear Video Progress</button>
       <button class="clear-storage-btn" onclick="clearButtonUnlock()">Clear Button Cache</button>
+      <button class="clear-storage-btn" onclick="clearBackButtonCache()">Clear Back Button Cache</button>
       <button class="clear-storage-btn" onclick="clearAllStorage()">Clear All</button>
     </div>
   </div>
@@ -456,10 +457,18 @@
       alert('Button unlock cache cleared! Reload the page.');
     }
 
+    // Clear back button cache
+    function clearBackButtonCache() {
+      localStorage.removeItem('kajabi_back_button_shown');
+      console.log('✓ Back button cache cleared');
+      alert('Back button cache cleared! Reload the page.');
+    }
+
     // Clear all storage
     function clearAllStorage() {
       localStorage.removeItem('kajabi_video_progress');
       localStorage.removeItem('kajabi_button_unlocked');
+      localStorage.removeItem('kajabi_back_button_shown');
       console.log('✓ All storage cleared');
       alert('All storage cleared! Reload the page to start fresh.');
     }
@@ -474,6 +483,7 @@
     console.log('Current localStorage:');
     console.log('  kajabi_video_progress:', localStorage.getItem('kajabi_video_progress'));
     console.log('  kajabi_button_unlocked:', localStorage.getItem('kajabi_button_unlocked'));
+    console.log('  kajabi_back_button_shown:', localStorage.getItem('kajabi_back_button_shown'));
     console.log('================================================');
   </script>
 
