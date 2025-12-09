@@ -24,16 +24,57 @@
     return;
   }
 
+  // Detect Apple devices for better debugging
+  const isAppleDevice = /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isAppleDevice) {
+    console.log('[VideoLock] 🍎 Apple device detected:', navigator.userAgent);
+    console.log('[VideoLock] 🍎 Safari browser:', isSafari);
+  }
+
   // In-memory fallback for Safari private mode
   let memoryStorage = {};
   let localStorageAvailable = true;
 
-  // Test if localStorage is available
+  // Test if localStorage is available (comprehensive test for Apple devices)
   try {
-    localStorage.setItem('test', 'test');
-    localStorage.removeItem('test');
+    // Test basic availability
+    if (!window.localStorage) {
+      throw new Error('localStorage is not defined');
+    }
+
+    // Test write capability
+    const testKey = '__videolock_test__';
+    localStorage.setItem(testKey, 'test');
+    const testValue = localStorage.getItem(testKey);
+    localStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('localStorage read/write test failed');
+    }
+
+    console.log('[VideoLock] ✅ localStorage is available and working');
+
+    // Log existing progress data on startup
+    const existingData = localStorage.getItem(CONFIG.STORAGE_KEY);
+    if (existingData) {
+      const parsed = JSON.parse(existingData);
+      console.log('[VideoLock] 📚 Existing progress data found in localStorage:', parsed);
+      // Pre-populate memory storage with existing data
+      memoryStorage = Object.assign({}, parsed);
+      console.log('[VideoLock] 📚 Pre-populated memory storage with', Object.keys(memoryStorage).length, 'entries');
+    } else {
+      console.log('[VideoLock] 📚 No existing progress data in localStorage (fresh start)');
+    }
   } catch (e) {
-    console.warn('[VideoLock] localStorage not available (possibly Safari private mode), using in-memory storage');
+    console.warn('[VideoLock] ⚠️ localStorage not available:', e.message);
+    if (isAppleDevice) {
+      console.warn('[VideoLock] 🍎 This is common on Apple devices in Private Browsing mode');
+      console.warn('[VideoLock] 🍎 Using in-memory storage (progress will not persist across page reloads)');
+    } else {
+      console.warn('[VideoLock] Using in-memory storage (progress will not persist across page reloads)');
+    }
     localStorageAvailable = false;
   }
 
@@ -44,9 +85,13 @@
         if (localStorageAvailable) {
           const data = localStorage.getItem(CONFIG.STORAGE_KEY);
           const progress = data ? JSON.parse(data) : {};
-          return progress[resourceId] || 0;
+          const percentage = progress[resourceId] || 0;
+          console.log(`[VideoLock] 📖 Reading progress for resourceId ${resourceId}: ${percentage}%`);
+          return percentage;
         } else {
-          return memoryStorage[resourceId] || 0;
+          const percentage = memoryStorage[resourceId] || 0;
+          console.log(`[VideoLock] 📖 Reading progress from memory for resourceId ${resourceId}: ${percentage}%`);
+          return percentage;
         }
       } catch (e) {
         console.warn('[VideoLock] Error reading progress, using memory fallback:', e);
@@ -56,26 +101,80 @@
 
     set: function(resourceId, percentage) {
       try {
-        // Always update memory storage
+        // Always update memory storage first (reliable fallback)
+        const previousMemory = memoryStorage[resourceId] || 0;
         memoryStorage[resourceId] = Math.max(memoryStorage[resourceId] || 0, percentage);
+        console.log(`[VideoLock] 💾 Saving progress for resourceId ${resourceId}: ${percentage}% (was ${previousMemory}%)`);
 
         // Try to update localStorage if available
         if (localStorageAvailable) {
-          const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-          const progress = data ? JSON.parse(data) : {};
-          progress[resourceId] = Math.max(progress[resourceId] || 0, percentage);
-          localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const progress = data ? JSON.parse(data) : {};
+            const previousStorage = progress[resourceId] || 0;
+            progress[resourceId] = Math.max(progress[resourceId] || 0, percentage);
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
+            console.log(`[VideoLock]   ✓ Saved to localStorage (was ${previousStorage}%, now ${progress[resourceId]}%)`);
+            console.log(`[VideoLock]   📊 Full progress data:`, progress);
+          } catch (storageError) {
+            // Handle quota exceeded or other storage errors
+            if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
+              console.warn('[VideoLock] ⚠️ localStorage quota exceeded');
+              if (isAppleDevice) {
+                console.warn('[VideoLock] 🍎 This can happen on Apple devices when storage is full');
+              }
+            } else {
+              console.warn('[VideoLock] ⚠️ localStorage error:', storageError.message);
+            }
+            console.warn('[VideoLock] ⚠️ Switching to memory-only mode');
+            localStorageAvailable = false;
+          }
+        } else {
+          if (isAppleDevice) {
+            console.log(`[VideoLock]   ⚠️ localStorage not available (using memory), progress saved in memory only`);
+          } else {
+            console.log(`[VideoLock]   ⚠️ localStorage not available, using memory only`);
+          }
         }
       } catch (e) {
-        console.warn('[VideoLock] Error saving progress to localStorage, using memory only:', e);
-        localStorageAvailable = false;
+        console.warn('[VideoLock] ❌ Error saving progress:', e.message);
+        // Memory storage should still work
+        console.log('[VideoLock] Progress still saved in memory');
       }
     },
 
     isCompleted: function(resourceId) {
-      return this.get(resourceId) >= CONFIG.UNLOCK_THRESHOLD;
+      const progress = this.get(resourceId);
+      const completed = progress >= CONFIG.UNLOCK_THRESHOLD;
+      console.log(`[VideoLock]   ↳ isCompleted check: ${progress}% >= ${CONFIG.UNLOCK_THRESHOLD}% = ${completed}`);
+      return completed;
+    },
+
+    // Diagnostic function for debugging storage issues
+    diagnostics: function() {
+      console.log('=== VideoLock Storage Diagnostics ===');
+      console.log('Device Info:');
+      console.log('  - Is Apple Device:', isAppleDevice);
+      console.log('  - Is Safari:', isSafari);
+      console.log('  - User Agent:', navigator.userAgent);
+      console.log('Storage Status:');
+      console.log('  - localStorage Available:', localStorageAvailable);
+      console.log('  - Memory Storage Keys:', Object.keys(memoryStorage).length);
+      console.log('  - Memory Storage Data:', memoryStorage);
+      if (localStorageAvailable) {
+        try {
+          const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+          console.log('  - localStorage Data:', data ? JSON.parse(data) : 'empty');
+        } catch (e) {
+          console.log('  - localStorage Read Error:', e.message);
+        }
+      }
+      console.log('====================================');
     }
   };
+
+  // Expose diagnostics function to window for console debugging
+  window.videoLockDiagnostics = VideoProgress.diagnostics;
 
   // Get all video containers sorted by DOM order
   function getAllVideos() {
@@ -200,6 +299,12 @@
           display: flex;
           align-items: center;
           gap: 5px;
+          opacity: 1;
+          transition: opacity 0.5s ease-out;
+        }
+
+        .video-unlocked-badge.fade-out {
+          opacity: 0;
         }
 
         .video-container-wrapper {
@@ -227,6 +332,18 @@
 
     container.style.position = 'relative';
     container.appendChild(badge);
+
+    // Auto-hide badge after 3 seconds (fade out + remove)
+    setTimeout(function() {
+      badge.classList.add('fade-out');
+      // Remove from DOM after fade animation completes
+      setTimeout(function() {
+        if (badge.parentNode) {
+          badge.remove();
+          console.log('[VideoLock] ✓ Unlocked badge auto-removed after display period');
+        }
+      }, 500); // Wait for 0.5s fade-out transition
+    }, 3000); // Show for 3 seconds
   }
 
   // Lock a video

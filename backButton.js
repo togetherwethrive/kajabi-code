@@ -10,38 +10,64 @@
     BUTTON_TEXT_COLOR: '#fff',
     TOP_BUTTON_MARGIN: '20px', // Margin from top of page
     BOTTOM_BUTTON_MARGIN: '30px', // Margin above footer
-    STORAGE_KEY: 'kajabi_back_button_shown'
+    STORAGE_KEY: 'kajabi_back_button_data',
+    ALWAYS_SHOW_ATTRIBUTE: 'data-show-back-button' // Attribute to check for always-visible buttons
   };
 
   // Get URL parameters for unique storage key
   const urlParams = new URLSearchParams(window.location.search);
   const resourceId = urlParams.get('resourceId') || window.location.pathname;
 
-  // Storage management for back button visibility
+  // Storage management for back button data (visibility + referrer)
   const BackButtonStorage = {
     get: function(pageId) {
       try {
         const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const shown = data ? JSON.parse(data) : {};
-        return shown[pageId] || false;
+        const pages = data ? JSON.parse(data) : {};
+        return pages[pageId] || { shown: false, referrer: null };
       } catch (e) {
-        console.warn('[Back Button] Error reading visibility state:', e);
-        return false;
+        console.warn('[Back Button] Error reading button data:', e);
+        return { shown: false, referrer: null };
       }
     },
 
-    set: function(pageId, isShown) {
+    set: function(pageId, isShown, referrerUrl) {
       try {
         const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const shownStates = data ? JSON.parse(data) : {};
-        shownStates[pageId] = isShown;
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(shownStates));
-        console.log(`[Back Button] Visibility state saved for page: ${pageId}`);
+        const pages = data ? JSON.parse(data) : {};
+
+        // Preserve existing referrer if not provided
+        const existingData = pages[pageId] || {};
+        pages[pageId] = {
+          shown: isShown !== undefined ? isShown : existingData.shown,
+          referrer: referrerUrl !== undefined ? referrerUrl : existingData.referrer
+        };
+
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(pages));
+        console.log(`[Back Button] Data saved for page: ${pageId}`, pages[pageId]);
       } catch (e) {
-        console.warn('[Back Button] Error saving visibility state:', e);
+        console.warn('[Back Button] Error saving button data:', e);
       }
+    },
+
+    getReferrer: function(pageId) {
+      const data = this.get(pageId);
+      return data.referrer;
+    },
+
+    isShown: function(pageId) {
+      const data = this.get(pageId);
+      return data.shown;
     }
   };
+
+  // Save referrer URL when page loads (if we have one)
+  if (document.referrer && document.referrer !== window.location.href) {
+    console.log('[Back Button] Saving referrer URL:', document.referrer);
+    BackButtonStorage.set(resourceId, undefined, document.referrer);
+  } else {
+    console.log('[Back Button] No referrer detected (direct navigation or same page)');
+  }
 
   // Check if Wistia videos exist on page
   function getAllVideos() {
@@ -119,6 +145,19 @@
     console.log('[Back Button] Styles injected');
   }
 
+  // Navigate back function
+  function navigateBack() {
+    const savedReferrer = BackButtonStorage.getReferrer(resourceId);
+
+    if (savedReferrer) {
+      console.log('[Back Button] Navigating to saved referrer:', savedReferrer);
+      window.location.href = savedReferrer;
+    } else {
+      console.log('[Back Button] No saved referrer, using browser history');
+      window.history.back();
+    }
+  }
+
   // Create back buttons
   function createBackButtons() {
     console.log('[Back Button] Creating buttons...');
@@ -139,8 +178,8 @@
     topButton.textContent = CONFIG.BUTTON_TEXT;
     topButton.setAttribute('aria-label', 'Go back to previous lesson');
     topButton.addEventListener('click', function() {
-      console.log('[Back Button] Top button clicked - navigating back');
-      window.history.back();
+      console.log('[Back Button] Top button clicked');
+      navigateBack();
     });
 
     // Create bottom button
@@ -150,8 +189,8 @@
     bottomButton.textContent = CONFIG.BUTTON_TEXT;
     bottomButton.setAttribute('aria-label', 'Go back to previous lesson');
     bottomButton.addEventListener('click', function() {
-      console.log('[Back Button] Bottom button clicked - navigating back');
-      window.history.back();
+      console.log('[Back Button] Bottom button clicked');
+      navigateBack();
     });
 
     // Insert top button at the beginning of body
@@ -195,9 +234,26 @@
   function setupVideoTracking(buttons) {
     console.log('[Back Button] Setting up video tracking...');
 
+    // Check if page has attribute to always show buttons
+    const alwaysShow = document.body.getAttribute(CONFIG.ALWAYS_SHOW_ATTRIBUTE);
+    if (alwaysShow === 'true') {
+      console.log(`[Back Button] ✓ Found ${CONFIG.ALWAYS_SHOW_ATTRIBUTE}="true" on page - showing buttons immediately`);
+      showButtons(buttons, true); // Show and save state
+      return; // No need to set up watchers
+    }
+
+    // Check if page has previousLessonStart constant defined
+    if (typeof window.previousLessonStart !== 'undefined' && window.previousLessonStart) {
+      console.log('[Back Button] ✓ Found window.previousLessonStart constant - showing buttons immediately');
+      showButtons(buttons, true); // Show and save state
+      return; // No need to set up watchers
+    }
+
     // Check if buttons were already shown (from cache)
-    if (BackButtonStorage.get(resourceId)) {
+    if (BackButtonStorage.isShown(resourceId)) {
       console.log('[Back Button] Buttons were previously shown for this page (from cache)');
+      const savedReferrer = BackButtonStorage.getReferrer(resourceId);
+      console.log('[Back Button] Saved referrer URL:', savedReferrer || 'None');
       showButtons(buttons, false); // Show without re-saving
       return; // No need to set up watchers
     }
