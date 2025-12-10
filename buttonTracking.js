@@ -19,6 +19,27 @@ jQuery(function ($) {
     let processedUrl = url;
     let hasPlaceholder = false;
 
+    // SPECIAL CASE: thrivewithtwtapp.com/res/ URLs use path segments
+    // Format: https://thrivewithtwtapp.com/res/{resourceId}/{userId}/{contactId}?source=web
+    if (processedUrl.includes('thrivewithtwtapp.com/res/')) {
+      console.log('[Button Tracking] Detected thrivewithtwtapp.com/res/ URL - using path segment format');
+
+      // Extract the base URL (everything up to and including the resourceId)
+      // URL is typically: https://thrivewithtwtapp.com/res/66985
+      const baseUrl = processedUrl.split('?')[0]; // Remove any existing query params
+
+      if (userId && contactId) {
+        // Construct: https://thrivewithtwtapp.com/res/66985/308889/20753827?source=web
+        processedUrl = `${baseUrl}/${userId}/${contactId}?source=web`;
+        console.log('[Button Tracking] Constructed path-based URL:', processedUrl);
+        return processedUrl;
+      } else {
+        console.warn('[Button Tracking] Missing userId or contactId for thrivewithtwtapp.com/res/ URL');
+        console.warn('[Button Tracking] URL may not work correctly:', processedUrl);
+        return processedUrl;
+      }
+    }
+
     // Check and replace square bracket placeholders [user-id], [userId], [contactId], [resourceId]
     if (userId) {
       if (processedUrl.includes('[user-id]') || processedUrl.includes('[userId]')) {
@@ -92,12 +113,15 @@ jQuery(function ($) {
   function updateCtaTrackingButtonLinks(button) {
     const $button = $(button);
     const ctaTrackingId = $button.attr('data-cta-tracking-id');
-    
+    const buttonId = $button.attr('id');
+
     if (!ctaTrackingId) {
-      console.warn("Missing data-cta-tracking-id for button:", $button.attr('id'));
+      console.warn('[Button Tracking] Missing data-cta-tracking-id for button:', buttonId);
       return;
     }
-    
+
+    console.log('[Button Tracking] Fetching URL for button:', buttonId, 'with tracking ID:', ctaTrackingId);
+
     $.ajax({
       url: `https://app.rapidfunnel.com/api/api/resources/resource-details/`,
       method: 'GET',
@@ -107,17 +131,47 @@ jQuery(function ($) {
         contactId: contactId || ''
       },
       success: function (response) {
-        if (response && response.data && response.data.resourceUrl) {
-          // Process the URL with parameters (replaces placeholders or appends query params)
-          const formattedTrackingUrl = processUrlWithParams(response.data.resourceUrl);
-          $button.attr('href', formattedTrackingUrl);
+        console.log('[Button Tracking] API Response for', buttonId, ':', response);
+
+        if (response && response.data) {
+          console.log('[Button Tracking] Response data:', response.data);
+          console.log('[Button Tracking] Available fields:', Object.keys(response.data));
+
+          // Try to find the actual destination URL
+          // Check multiple possible field names
+          let destinationUrl = response.data.resourceUrl ||
+                              response.data.destinationUrl ||
+                              response.data.targetUrl ||
+                              response.data.url ||
+                              response.data.finalUrl;
+
+          if (destinationUrl) {
+            console.log('[Button Tracking] Raw URL from API:', destinationUrl);
+
+            // Check if this is a thrivewithtwtapp.com/res/ tracking URL
+            if (destinationUrl.includes('thrivewithtwtapp.com/res/')) {
+              console.log('[Button Tracking] ✓ Detected thrivewithtwtapp.com/res/ tracking URL');
+              console.log('[Button Tracking] Will construct path-based URL: /res/{resourceId}/{userId}/{contactId}?source=web');
+            }
+
+            // Process the URL with parameters (replaces placeholders or appends query params)
+            const formattedTrackingUrl = processUrlWithParams(destinationUrl);
+            console.log('[Button Tracking] ✅ Final processed URL:', formattedTrackingUrl);
+            $button.attr('href', formattedTrackingUrl);
+          } else {
+            console.error('[Button Tracking] No URL found in response data:', response.data);
+            console.error('[Button Tracking] Full response:', JSON.stringify(response, null, 2));
+            $button.attr("href", "#").addClass("disabled");
+          }
         } else {
-          console.warn("Invalid tracking data received for:", ctaTrackingId);
+          console.warn('[Button Tracking] Invalid tracking data received for:', ctaTrackingId);
+          console.warn('[Button Tracking] Response:', response);
           $button.attr("href", "#").addClass("disabled");
         }
       },
       error: function (xhr, status, error) {
-        console.error("Error fetching tracking URL:", error, "Status:", status);
+        console.error('[Button Tracking] Error fetching tracking URL:', error, 'Status:', status);
+        console.error('[Button Tracking] XHR:', xhr);
         $button.attr("href", "#").addClass("disabled").prop("disabled", true);
       }
     });
@@ -243,4 +297,44 @@ jQuery(function ($) {
     event.preventDefault();
     handleCtaTrackingButtonClick(this.id);
   });
+
+  // Expose diagnostic function to window for console debugging
+  window.checkButtonTracking = function(trackingId) {
+    console.log('=== Button Tracking Diagnostics ===');
+    console.log('Checking tracking ID:', trackingId);
+    console.log('Current params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
+
+    $.ajax({
+      url: `https://app.rapidfunnel.com/api/api/resources/resource-details/`,
+      method: 'GET',
+      data: {
+        userId: userId,
+        resourceId: trackingId,
+        contactId: contactId || ''
+      },
+      success: function (response) {
+        console.log('✅ API Response:', response);
+        if (response && response.data) {
+          console.log('📊 Response Data:', response.data);
+          console.log('📋 Available Fields:', Object.keys(response.data));
+          console.log('🔗 resourceUrl:', response.data.resourceUrl);
+          if (response.data.resourceUrl && response.data.resourceUrl.includes('thrivewithtwtapp.com/res/')) {
+            console.log('✓ This is a thrivewithtwtapp.com/res/ tracking URL');
+            const processedUrl = processUrlWithParams(response.data.resourceUrl);
+            console.log('✓ Will be processed to:', processedUrl);
+            console.log('✓ Expected format: https://thrivewithtwtapp.com/res/{resourceId}/{userId}/{contactId}?source=web');
+          }
+        }
+        console.log('====================================');
+      },
+      error: function (xhr, status, error) {
+        console.error('❌ API Error:', error, 'Status:', status);
+        console.error('Response:', xhr.responseText);
+        console.log('====================================');
+      }
+    });
+  };
+
+  console.log('[Button Tracking] 💡 Diagnostic function available: checkButtonTracking(trackingId)');
+  console.log('[Button Tracking] Example: checkButtonTracking(66985)');
 });
