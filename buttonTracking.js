@@ -88,17 +88,6 @@ jQuery(function ($) {
     return processedUrl;
   }
 
-  // Helper function for redirects
-  function handleRedirect(url, target) {
-    if (!url) return;
-
-    if (target === "_blank") {
-      window.open(url, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.href = url;
-    }
-  }
-  
   // Function to update href for each CTA tracking button
   function updateCtaTrackingButtonLinks(button) {
     const $button = $(button);
@@ -139,14 +128,17 @@ jQuery(function ($) {
     updateCtaTrackingButtonLinks(this);
   });
   
-  // Flag to prevent duplicate submissions
-  let isProcessing = false;
-  
+  // Track buttons being processed to prevent duplicates
+  const processingButtons = new Set();
+
   // Function to handle CTA button clicks
   function handleCtaTrackingButtonClick(buttonId) {
-    // Prevent multiple simultaneous clicks
-    if (isProcessing) return;
-    isProcessing = true;
+    // Prevent multiple simultaneous clicks on the same button
+    if (processingButtons.has(buttonId)) {
+      console.log('[Button Tracking] Button', buttonId, 'is already being processed');
+      return;
+    }
+    processingButtons.add(buttonId);
 
     const $button = $('#' + buttonId);
     const ctaTrackingLocation = $button.attr('data-cta-tracking-location');
@@ -160,10 +152,40 @@ jQuery(function ($) {
     // Don't process disabled buttons or ones with # hrefs
     if ($button.hasClass('disabled') || redirectUrl === '#') {
       console.warn('[Button Tracking] Button is disabled or has # href');
-      isProcessing = false;
+      processingButtons.delete(buttonId);
       return;
     }
+
+    // IMPORTANT: For target="_blank", open the window IMMEDIATELY to avoid popup blockers
+    // Popup blockers will block windows opened asynchronously (after AJAX completes)
+    let newWindow = null;
+    if (target === '_blank') {
+      console.log('[Button Tracking] Opening new tab immediately (to bypass popup blockers)');
+      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+      if (!newWindow) {
+        console.warn('[Button Tracking] Failed to open new window - popup blocker may be active');
+      }
+    }
     
+    // Helper function to complete the redirect
+    function completeRedirect() {
+      processingButtons.delete(buttonId);
+
+      if (target === '_blank' && newWindow) {
+        // Update the pre-opened window with the actual URL
+        console.log('[Button Tracking] Navigating opened tab to:', redirectUrl);
+        newWindow.location.href = redirectUrl;
+      } else if (target === '_blank' && !newWindow) {
+        // Fallback if window was blocked - try opening directly (may still be blocked)
+        console.log('[Button Tracking] Attempting direct window.open (may be blocked)');
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        // Regular navigation for same-tab links
+        console.log('[Button Tracking] Navigating same tab to:', redirectUrl);
+        window.location.href = redirectUrl;
+      }
+    }
+
     if (contactId) {
       $.ajax({
         url: `https://apiv2.rapidfunnel.com/v2/contact-details/${contactId}`,
@@ -173,7 +195,8 @@ jQuery(function ($) {
         success: function (response) {
           if (response && response.data) {
             const contactData = response.data;
-            
+
+            // Send tracking email (fire and forget - don't block redirect)
             $.ajax({
               url: 'https://app.rapidfunnel.com/api/mail/send-cta-email',
               type: 'POST',
@@ -189,29 +212,29 @@ jQuery(function ($) {
                 ctaPageName: pageName
               }),
               success: function (response) {
-                isProcessing = false;
-                handleRedirect(redirectUrl, target);
+                console.log('[Button Tracking] Tracking email sent successfully');
               },
               error: function (xhr, status, error) {
-                isProcessing = false;
-                handleRedirect(redirectUrl, target);
+                console.warn('[Button Tracking] Failed to send tracking email:', error);
               }
             });
+
+            // Redirect immediately after starting email request (don't wait for it)
+            completeRedirect();
           } else {
-            console.error("Invalid contact data received");
-            isProcessing = false;
-            handleRedirect(redirectUrl, target);
+            console.error('[Button Tracking] Invalid contact data received');
+            completeRedirect();
           }
         },
         error: function (xhr, status, error) {
-          console.error("Failed to fetch contact details:", error);
-          isProcessing = false;
-          handleRedirect(redirectUrl, target);
+          console.error('[Button Tracking] Failed to fetch contact details:', error);
+          completeRedirect();
         }
       });
     } else {
-      isProcessing = false;
-      handleRedirect(redirectUrl, target);
+      // No contact tracking needed, redirect immediately
+      console.log('[Button Tracking] No contactId, redirecting without tracking');
+      completeRedirect();
     }
   }
   
