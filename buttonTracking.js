@@ -19,6 +19,67 @@ jQuery(function ($) {
     let processedUrl = url;
     let hasPlaceholder = false;
 
+    // STEP 1: Check and replace ALL placeholders first
+    // This allows the API to control the URL format through placeholders
+
+    // Replace square bracket placeholders: [user-id], [userId], [contactId], [resourceId]
+    if (processedUrl.includes('[user-id]') || processedUrl.includes('[userId]')) {
+      if (userId) {
+        processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+        processedUrl = processedUrl.replace(/\[userId\]/g, userId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced [userId] placeholder with:', userId);
+      }
+    }
+
+    if (processedUrl.includes('[contactId]')) {
+      if (contactId) {
+        processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced [contactId] placeholder with:', contactId);
+      }
+    }
+
+    if (processedUrl.includes('[resourceId]')) {
+      if (resourceId) {
+        processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced [resourceId] placeholder with:', resourceId);
+      }
+    }
+
+    // Replace curly brace placeholders: {userId}, {contactId}, {resourceId}
+    if (processedUrl.includes('{userId}')) {
+      if (userId) {
+        processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced {userId} placeholder with:', userId);
+      }
+    }
+
+    if (processedUrl.includes('{contactId}')) {
+      if (contactId) {
+        processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced {contactId} placeholder with:', contactId);
+      }
+    }
+
+    if (processedUrl.includes('{resourceId}')) {
+      if (resourceId) {
+        processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+        hasPlaceholder = true;
+        console.log('[Button Tracking] Replaced {resourceId} placeholder with:', resourceId);
+      }
+    }
+
+    // STEP 2: If placeholders were found and replaced, we're done!
+    if (hasPlaceholder) {
+      console.log('[Button Tracking] ✅ URL contained placeholders - processed URL:', processedUrl);
+      return processedUrl;
+    }
+
+    // STEP 3: No placeholders found - check for special URL formats
     // SPECIAL CASE: thrivewithtwtapp.com/res/ URLs use path segments
     // Format: https://thrivewithtwtapp.com/res/{resourceId}/{userId}/{contactId}?source=web
     if (processedUrl.includes('thrivewithtwtapp.com/res/')) {
@@ -31,7 +92,7 @@ jQuery(function ($) {
       if (userId && contactId) {
         // Construct: https://thrivewithtwtapp.com/res/66985/308889/20753827?source=web
         processedUrl = `${baseUrl}/${userId}/${contactId}?source=web`;
-        console.log('[Button Tracking] Constructed path-based URL:', processedUrl);
+        console.log('[Button Tracking] ✅ Constructed path-based URL:', processedUrl);
         return processedUrl;
       } else {
         console.warn('[Button Tracking] Missing userId or contactId for thrivewithtwtapp.com/res/ URL');
@@ -40,72 +101,31 @@ jQuery(function ($) {
       }
     }
 
-    // Check and replace square bracket placeholders [user-id], [userId], [contactId], [resourceId]
-    if (userId) {
-      if (processedUrl.includes('[user-id]') || processedUrl.includes('[userId]')) {
-        processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
-        processedUrl = processedUrl.replace(/\[userId\]/g, userId);
-        hasPlaceholder = true;
+    // STEP 4: Default behavior - append as query parameters
+    try {
+      const urlObj = new URL(processedUrl);
+
+      if (userId) {
+        urlObj.searchParams.set('userId', userId);
       }
-    }
 
-    if (contactId) {
-      if (processedUrl.includes('[contactId]')) {
-        processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
-        hasPlaceholder = true;
+      if (contactId) {
+        urlObj.searchParams.set('contactId', contactId);
       }
-    }
 
-    if (resourceId) {
-      if (processedUrl.includes('[resourceId]')) {
-        processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
-        hasPlaceholder = true;
+      // Only append resourceId if the URL doesn't already contain a numeric resourceId in the path
+      // This prevents adding page's resourceId when button URL has its own resourceId
+      const hasResourceIdInPath = /\/\d{4,}\//.test(processedUrl);
+      if (resourceId && !hasResourceIdInPath) {
+        urlObj.searchParams.set('resourceId', resourceId);
       }
+
+      processedUrl = urlObj.toString();
+      console.log('[Button Tracking] ✅ Appended query parameters:', processedUrl);
+    } catch (e) {
+      console.warn("[Button Tracking] Invalid URL format:", processedUrl, e);
     }
 
-    // Check and replace curly brace placeholders {userId}, {contactId}, {resourceId}
-    if (userId && processedUrl.includes('{userId}')) {
-      processedUrl = processedUrl.replace(/\{userId\}/g, userId);
-      hasPlaceholder = true;
-    }
-
-    if (contactId && processedUrl.includes('{contactId}')) {
-      processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
-      hasPlaceholder = true;
-    }
-
-    if (resourceId && processedUrl.includes('{resourceId}')) {
-      processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
-      hasPlaceholder = true;
-    }
-
-    // If no placeholders were found, append as query parameters
-    if (!hasPlaceholder) {
-      try {
-        const urlObj = new URL(processedUrl);
-
-        if (userId) {
-          urlObj.searchParams.set('userId', userId);
-        }
-
-        if (contactId) {
-          urlObj.searchParams.set('contactId', contactId);
-        }
-
-        // Only append resourceId if the URL doesn't already contain a numeric resourceId in the path
-        // This prevents adding page's resourceId when button URL has its own resourceId
-        const hasResourceIdInPath = /\/\d{4,}\//.test(processedUrl);
-        if (resourceId && !hasResourceIdInPath) {
-          urlObj.searchParams.set('resourceId', resourceId);
-        }
-
-        processedUrl = urlObj.toString();
-      } catch (e) {
-        console.warn("[Button Tracking] Invalid URL format:", processedUrl, e);
-      }
-    }
-
-    console.log('[Button Tracking] Processed URL:', processedUrl);
     return processedUrl;
   }
 
@@ -148,13 +168,17 @@ jQuery(function ($) {
           if (destinationUrl) {
             console.log('[Button Tracking] Raw URL from API:', destinationUrl);
 
-            // Check if this is a thrivewithtwtapp.com/res/ tracking URL
-            if (destinationUrl.includes('thrivewithtwtapp.com/res/')) {
-              console.log('[Button Tracking] ✓ Detected thrivewithtwtapp.com/res/ tracking URL');
-              console.log('[Button Tracking] Will construct path-based URL: /res/{resourceId}/{userId}/{contactId}?source=web');
+            // Check what type of URL processing will happen
+            if (destinationUrl.includes('{userId}') || destinationUrl.includes('{contactId}') ||
+                destinationUrl.includes('[userId]') || destinationUrl.includes('[contactId]')) {
+              console.log('[Button Tracking] ✓ URL contains placeholders - will replace with actual values');
+            } else if (destinationUrl.includes('thrivewithtwtapp.com/res/')) {
+              console.log('[Button Tracking] ✓ thrivewithtwtapp.com/res/ URL - will use path segment format');
+            } else {
+              console.log('[Button Tracking] ✓ Regular URL - will append query parameters');
             }
 
-            // Process the URL with parameters (replaces placeholders or appends query params)
+            // Process the URL with parameters (replaces placeholders or constructs URL)
             const formattedTrackingUrl = processUrlWithParams(destinationUrl);
             console.log('[Button Tracking] ✅ Final processed URL:', formattedTrackingUrl);
             $button.attr('href', formattedTrackingUrl);
@@ -317,12 +341,27 @@ jQuery(function ($) {
         if (response && response.data) {
           console.log('📊 Response Data:', response.data);
           console.log('📋 Available Fields:', Object.keys(response.data));
-          console.log('🔗 resourceUrl:', response.data.resourceUrl);
-          if (response.data.resourceUrl && response.data.resourceUrl.includes('thrivewithtwtapp.com/res/')) {
-            console.log('✓ This is a thrivewithtwtapp.com/res/ tracking URL');
-            const processedUrl = processUrlWithParams(response.data.resourceUrl);
-            console.log('✓ Will be processed to:', processedUrl);
-            console.log('✓ Expected format: https://thrivewithtwtapp.com/res/{resourceId}/{userId}/{contactId}?source=web');
+          const url = response.data.resourceUrl || response.data.url;
+          console.log('🔗 resourceUrl:', url);
+
+          if (url) {
+            // Check what processing will happen
+            if (url.includes('{userId}') || url.includes('{contactId}') ||
+                url.includes('[userId]') || url.includes('[contactId]')) {
+              console.log('✓ URL contains placeholders');
+              console.log('  Example placeholders: {userId}, {contactId}, [userId], [contactId]');
+              const processedUrl = processUrlWithParams(url);
+              console.log('✓ After placeholder replacement:', processedUrl);
+            } else if (url.includes('thrivewithtwtapp.com/res/')) {
+              console.log('✓ This is a thrivewithtwtapp.com/res/ tracking URL');
+              const processedUrl = processUrlWithParams(url);
+              console.log('✓ Will be processed to:', processedUrl);
+              console.log('✓ Expected format: https://thrivewithtwtapp.com/res/{resourceId}/{userId}/{contactId}?source=web');
+            } else {
+              console.log('✓ Regular URL - will append query parameters');
+              const processedUrl = processUrlWithParams(url);
+              console.log('✓ After adding params:', processedUrl);
+            }
           }
         }
         console.log('====================================');
