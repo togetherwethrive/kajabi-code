@@ -95,11 +95,19 @@
       return true;
     }
 
-    // PRIORITY 3: Check if custom back URL is defined
+    // PRIORITY 3: Check if custom back URL is defined OR force show via div
     const backButtonDiv = document.getElementById('back-button-url');
-    if (backButtonDiv && backButtonDiv.getAttribute('data-url')) {
-      console.log('[Back Button] Custom back URL defined - showing buttons');
-      return true;
+    if (backButtonDiv) {
+      // Check for force show attribute on div
+      if (backButtonDiv.getAttribute('data-back-button') === 'true') {
+        console.log('[Back Button] Force show enabled via div data-back-button="true"');
+        return true;
+      }
+      // Check for custom URL
+      if (backButtonDiv.getAttribute('data-url')) {
+        console.log('[Back Button] Custom back URL defined - showing buttons');
+        return true;
+      }
     }
 
     const bodyBackUrl = document.body.getAttribute('data-back-button-url');
@@ -597,16 +605,36 @@
     console.log('[Back Button] Document ready state:', document.readyState);
     console.log('[Back Button] ========================================');
 
-    if (document.readyState === 'loading') {
-      console.log('[Back Button] Waiting for DOMContentLoaded...');
-      document.addEventListener('DOMContentLoaded', function() {
-        console.log('[Back Button] DOMContentLoaded fired');
-        injectStyles();
-        const buttons = createBackButtons();
-        setupVideoTracking(buttons);
-      });
-    } else {
-      console.log('[Back Button] DOM already loaded, proceeding immediately');
+    // Helper function to check if div exists and proceed
+    function checkDivAndProceed() {
+      // CRITICAL CHECK: Verify that the #back-button-url div exists
+      const backButtonDiv = document.getElementById('back-button-url');
+      if (!backButtonDiv) {
+        console.log('[Back Button] ⚠️ DIV with id="back-button-url" NOT FOUND on this page');
+        console.log('[Back Button] ❌ Back buttons will NOT be created');
+        console.log('[Back Button] To enable back buttons, add this to your page:');
+        console.log('[Back Button] <div id="back-button-url" data-url="YOUR_URL_HERE"></div>');
+        return; // ABORT - do not create any buttons
+      }
+
+      console.log('[Back Button] ✓ Found #back-button-url div - proceeding with initialization');
+      injectStyles();
+      const buttons = createBackButtons();
+      setupVideoTracking(buttons);
+    }
+
+    // Helper function for delayed check
+    function checkDivAndProceedDelayed() {
+      const backButtonDiv = document.getElementById('back-button-url');
+      if (!backButtonDiv) {
+        console.log('[Back Button] ⚠️ DIV with id="back-button-url" NOT FOUND on this page');
+        console.log('[Back Button] ❌ Back buttons will NOT be created');
+        console.log('[Back Button] To enable back buttons, add this to your page:');
+        console.log('[Back Button] <div id="back-button-url" data-url="YOUR_URL_HERE"></div>');
+        return; // ABORT - do not create any buttons
+      }
+
+      console.log('[Back Button] ✓ Found #back-button-url div - proceeding with initialization');
       injectStyles();
       const buttons = createBackButtons();
       // Wait a bit for Wistia to load
@@ -614,6 +642,17 @@
       setTimeout(function() {
         setupVideoTracking(buttons);
       }, 1000);
+    }
+
+    if (document.readyState === 'loading') {
+      console.log('[Back Button] Waiting for DOMContentLoaded...');
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Back Button] DOMContentLoaded fired');
+        checkDivAndProceed();
+      });
+    } else {
+      console.log('[Back Button] DOM already loaded, proceeding immediately');
+      checkDivAndProceedDelayed();
     }
   }
 

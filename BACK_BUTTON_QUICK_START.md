@@ -10,10 +10,13 @@ Add this blank div anywhere on your page:
 
 **That's it!** URL parameters (userId, contactId, resourceId) are automatically added to the URL!
 
+**🚨 CRITICAL:** This div is REQUIRED - without it, back buttons will NOT be created at all!
+
 **🚨 IMPORTANT:** Back buttons only show if:
 - User came from another page (has referrer), OR
 - You define a custom back URL (recommended - the div above!), OR
-- You force show with `data-show-back-button="true"`
+- You force show with `data-back-button="true"` on the div, OR
+- You force show with `data-show-back-button="true"` on the body tag
 
 **If user navigates directly to the page (no referrer) and you didn't define a custom URL = No back button shows.** This is smart - no point showing a useless back button!
 
@@ -34,6 +37,13 @@ Add this blank div anywhere on your page:
 **Result:** `https://my.rapidfunnel.com/course/lesson-2?userId=XXX&contactId=YYY`
 
 ### Template 3: Show Buttons Immediately (Without Waiting for Video)
+
+**Option A: Using the div (Recommended)**
+```html
+<div id="back-button-url" data-back-button="true" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>
+```
+
+**Option B: Using the body tag**
 ```html
 <body data-show-back-button="true">
   <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>

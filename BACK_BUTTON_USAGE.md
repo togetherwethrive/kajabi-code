@@ -3,11 +3,13 @@
 ## Overview
 The back button script creates two navigation buttons (top and bottom of page) that appear after the last video on the page reaches 90% completion. The buttons allow users to navigate back to a previous page.
 
+**🚨 CRITICAL REQUIREMENT:** The `<div id="back-button-url">` element MUST be present on the page. Without this div, the script will NOT create any back buttons at all.
+
 ---
 
 ## How to Set the Back Button URL
 
-### Method 1: Using a Blank Div (RECOMMENDED) ⭐
+### Method 1: Using a Blank Div (RECOMMENDED) ⭐ **REQUIRED**
 
 Add a blank div with a specific ID and data attribute anywhere on your page:
 
@@ -20,24 +22,27 @@ Add a blank div with a specific ID and data attribute anywhere on your page:
 </body>
 ```
 
-**This is the most reliable and cleanest method.** The div is completely invisible and can be placed anywhere on the page.
+**This div is REQUIRED for the script to work.** The div is completely invisible and can be placed anywhere on the page.
 
 **✨ Automatic Parameter Handling:**
 - If you use placeholders like `{userId}`, they get replaced with actual values
 - If you DON'T use placeholders, parameters are automatically appended to the URL
 - Either way, userId, contactId, and resourceId are always included!
 
-### Method 2: Using Body Attribute (Legacy Support)
+### Method 2: Using Body Attribute (Legacy Support - Not Recommended)
 
-You can also add a `data-back-button-url` attribute to your `<body>` tag:
+⚠️ **IMPORTANT:** Even if using the body attribute, you MUST still have the `<div id="back-button-url">` present on the page (it can be empty).
 
 ```html
 <body data-back-button-url="https://my.rapidfunnel.com/previous-page">
+  <!-- The div is still required, even if empty! -->
+  <div id="back-button-url"></div>
+
   <!-- Your page content -->
 </body>
 ```
 
-**Note:** The div method (Method 1) takes priority over this if both are present.
+**Note:** This method is deprecated. Use Method 1 (div with data-url) instead.
 
 ---
 
@@ -155,10 +160,12 @@ Use placeholders to control which parameters are added:
 
 **Back buttons will ONLY appear if at least ONE of these conditions is true:**
 
-1. ✅ **User came from another page** (document.referrer exists)
-2. ✅ **Custom back URL defined** (via div or body attribute)
-3. ✅ **Forced to show** (`data-show-back-button="true"` or `window.previousLessonStart`)
-4. ✅ **Saved referrer from previous visit** (stored in localStorage)
+1. ✅ **Forced to show via div** (`data-back-button="true"` on the #back-button-url div)
+2. ✅ **Forced to show via body** (`data-show-back-button="true"` on body tag)
+3. ✅ **Forced to show via script** (`window.previousLessonStart` constant)
+4. ✅ **Custom back URL defined** (via div or body attribute)
+5. ✅ **User came from another page** (document.referrer exists)
+6. ✅ **Saved referrer from previous visit** (stored in localStorage)
 
 **If NONE of these are true, buttons will NOT show.**
 
@@ -232,12 +239,17 @@ The back buttons will automatically:
 
 If you want the buttons to show immediately (without waiting for video):
 
-**Method 1: Body Attribute**
+**Method 1: Div Attribute (Recommended) ⭐**
+```html
+<div id="back-button-url" data-back-button="true" data-url="https://example.com/previous"></div>
+```
+
+**Method 2: Body Attribute**
 ```html
 <body data-show-back-button="true" data-back-button-url="https://example.com/previous">
 ```
 
-**Method 2: JavaScript Constant**
+**Method 3: JavaScript Constant**
 ```html
 <script>
   window.previousLessonStart = true;
@@ -280,15 +292,20 @@ const CONFIG = {
 
 **Common Issues:**
 
-1. **No videos detected**
+1. **Buttons not being created at all** 🚨 MOST COMMON
+   - Console shows: `⚠️ DIV with id="back-button-url" NOT FOUND on this page`
+   - **Solution:** Add `<div id="back-button-url" data-url="YOUR_URL"></div>` to your page
+   - This div is REQUIRED - the script will not create any buttons without it
+
+2. **No videos detected**
    - Make sure you have Wistia videos on the page
    - Videos need `data-resource-id` attribute
 
-2. **URL blocked by security policy**
+3. **URL blocked by security policy**
    - Check console for "blocked by security policy" message
    - Make sure your URL domain is in the whitelist
 
-3. **Buttons showing too early**
+4. **Buttons showing too early**
    - Remove `data-show-back-button="true"` if set
    - Remove `window.previousLessonStart` if set
 
@@ -333,7 +350,10 @@ console.log(document.body.getAttribute('data-back-button-url'));
 <!-- ⭐ With Parameters (Recommended) -->
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/previous?userId={userId}&contactId={contactId}"></div>
 
-<!-- ⭐ Always Show Buttons -->
+<!-- ⭐ Always Show Buttons (Div Method - Recommended) -->
+<div id="back-button-url" data-back-button="true" data-url="https://my.rapidfunnel.com/previous"></div>
+
+<!-- ⭐ Always Show Buttons (Body Method - Also Works) -->
 <body data-show-back-button="true">
   <div id="back-button-url" data-url="https://my.rapidfunnel.com/previous"></div>
   <div class="wistia_embed wistia_async_abc123" data-resource-id="12345"></div>

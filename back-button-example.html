@@ -8,11 +8,16 @@
 <body>
 
   <!--
-    ⭐⭐⭐ IMPORTANT: Add this blank div with your back button URL ⭐⭐⭐
+    ⭐⭐⭐ CRITICAL REQUIREMENT: This div is REQUIRED ⭐⭐⭐
+
+    🚨 WITHOUT THIS DIV, BACK BUTTONS WILL NOT BE CREATED AT ALL! 🚨
 
     The div MUST have:
-    - id="back-button-url" (exactly this id)
-    - data-url="YOUR_URL_HERE" (your previous page URL)
+    - id="back-button-url" (exactly this id - REQUIRED)
+    - data-url="YOUR_URL_HERE" (your previous page URL - REQUIRED)
+
+    Optional attribute:
+    - data-back-button="true" (force buttons to show immediately without waiting for video)
 
     Examples:
 
@@ -21,6 +26,9 @@
 
     2. URL with dynamic parameters (RECOMMENDED):
        <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2?userId={userId}&contactId={contactId}"></div>
+
+    3. Force show buttons immediately:
+       <div id="back-button-url" data-back-button="true" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>
 
     The div is completely invisible and can be placed anywhere on the page!
   -->
@@ -47,10 +55,12 @@
 
     They appear when:
     - The last video on the page reaches 90% completion
+    - OR if you add data-back-button="true" to the div above (RECOMMENDED)
     - OR if you add data-show-back-button="true" to the <body> tag
 
-    To force buttons to show immediately:
-    <body data-show-back-button="true">
+    To force buttons to show immediately (two options):
+    1. Add to div: <div id="back-button-url" data-back-button="true" data-url="...">
+    2. Add to body: <body data-show-back-button="true">
   -->
 
   <footer>

@@ -8,10 +8,13 @@ Add this blank div anywhere on your page:
 <div id="back-button-url" data-url="PASTE_YOUR_URL_HERE"></div>
 ```
 
+**🚨 CRITICAL REQUIREMENT:** This div MUST be present on the page or back buttons will NOT be created at all!
+
 **⚠️ IMPORTANT:** Back buttons will ONLY show if:
-- User came from another page (has referrer), OR
+- You force show with `data-back-button="true"` on the div, OR
+- You force show with `data-show-back-button="true"` on body tag, OR
 - You defined a custom back URL (the div above), OR
-- You force show with `data-show-back-button="true"`
+- User came from another page (has referrer)
 
 **If user navigates directly to page = No back button** ✅ This prevents showing a useless back button!
 
@@ -115,7 +118,12 @@ These get auto-replaced:
 - `{resourceId}` → Current page ID
 
 ### Force Buttons to Show Immediately
-Add to `<body>` tag:
+**Option 1: Add to div (Recommended):**
+```html
+<div id="back-button-url" data-back-button="true" data-url="https://example.com/previous">
+```
+
+**Option 2: Add to body tag:**
 ```html
 <body data-show-back-button="true">
 ```
@@ -125,10 +133,11 @@ Add to `<body>` tag:
 ## 🎯 When Buttons Show vs Don't Show
 
 ### ✅ Buttons WILL Show When:
-1. **User came from another page** (has document.referrer)
-2. **Custom back URL defined** (the div with `data-url`)
-3. **Forced to show** (`data-show-back-button="true"`)
-4. **Saved referrer from previous visit** (localStorage)
+1. **Forced to show on div** (`data-back-button="true"` on the div)
+2. **Forced to show on body** (`data-show-back-button="true"` on body tag)
+3. **Custom back URL defined** (the div with `data-url`)
+4. **User came from another page** (has document.referrer)
+5. **Saved referrer from previous visit** (localStorage)
 
 ### ❌ Buttons Will NOT Show When:
 1. **User typed URL directly** (no referrer)
