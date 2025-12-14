@@ -14,9 +14,13 @@
     ALWAYS_SHOW_ATTRIBUTE: 'data-show-back-button' // Attribute to check for always-visible buttons
   };
 
-  // Get URL parameters for unique storage key
+  // Get URL parameters for unique storage key - SANITIZED to prevent XSS
   const urlParams = new URLSearchParams(window.location.search);
-  const resourceId = urlParams.get('resourceId') || window.location.pathname;
+  const resourceIdRaw = urlParams.get('resourceId') || '';
+
+  // Validate that resourceId is numeric only (prevent XSS injection)
+  // Fall back to pathname if no valid resourceId
+  const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : window.location.pathname;
 
   // Storage management for back button data (visibility + referrer)
   const BackButtonStorage = {

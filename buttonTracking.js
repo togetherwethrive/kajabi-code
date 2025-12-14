@@ -1,17 +1,66 @@
-jQuery(function ($) {
-  // Parse the URL to extract userId and contactId
-  const parsedUrl = new URL(window.location.href);
-  const userId = parsedUrl.searchParams.get('userId');
-  const contactId = parsedUrl.searchParams.get('contactId');
-  const resourceId = parsedUrl.searchParams.get('resourceId');
-  const pageName = document.title || "Unknown Page";
+// SECURITY: Check if jQuery is loaded before executing
+if (typeof jQuery === 'undefined') {
+  console.error('[Button Tracking] CRITICAL ERROR: jQuery is required but not loaded');
+  console.error('[Button Tracking] This script will not execute. Please ensure jQuery is loaded before this script.');
+  // Exit immediately - do not execute the rest of the code
+} else {
+  jQuery(function ($) {
+    // Parse the URL to extract userId and contactId - SANITIZED to prevent XSS
+    const parsedUrl = new URL(window.location.href);
+    const userIdRaw = parsedUrl.searchParams.get('userId') || '';
+    const contactIdRaw = parsedUrl.searchParams.get('contactId') || '';
+    const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
+
+    // Validate that IDs are numeric only (prevent XSS injection)
+    const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+    const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+    const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+
+    const pageName = document.title || "Unknown Page";
 
   // Cache selector results to improve performance
   const $ctaTrackingButtons = $('[id^="ctaTrackingButton"]');
 
+  // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
+  const ALLOWED_REDIRECT_DOMAINS = [
+    'rapidfunnel.com',
+    'my.rapidfunnel.com',
+    'app.rapidfunnel.com',
+    'apiv2.rapidfunnel.com',
+    'thrivewithtwtapp.com',
+    'kajabi.com',
+    'twtmentorship.com'
+  ];
+
+  // Helper function to validate URL against whitelist
+  function isUrlAllowed(url) {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const hostname = urlObj.hostname;
+
+      const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
+        return hostname === domain || hostname.endsWith('.' + domain);
+      });
+
+      if (!isAllowed) {
+        console.warn('[Button Tracking] Redirect blocked - domain not in whitelist:', hostname);
+      }
+      return isAllowed;
+    } catch (e) {
+      console.warn('[Button Tracking] Invalid URL format:', url);
+      return false;
+    }
+  }
+
   // Helper function to process URL with parameters
   function processUrlWithParams(url) {
     if (!url) return url;
+
+    // SECURITY: Validate URL against whitelist before processing
+    if (!isUrlAllowed(url)) {
+      console.error('[Button Tracking] URL blocked by security policy:', url);
+      return '#';
+    }
 
     console.log('[Button Tracking] Processing URL:', url);
     console.log('[Button Tracking] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
@@ -377,3 +426,4 @@ jQuery(function ($) {
   console.log('[Button Tracking] 💡 Diagnostic function available: checkButtonTracking(trackingId)');
   console.log('[Button Tracking] Example: checkButtonTracking(66985)');
 });
+}

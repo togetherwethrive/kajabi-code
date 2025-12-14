@@ -20,31 +20,24 @@
 
   // Check if we have valid user credentials
   if (!userId || !isNumeric(userId)) {
-    console.warn('[VideoLock] 💡 Missing or invalid userId - locking disabled');
+    console.warn('[VideoLock] Missing or invalid userId - locking disabled');
     return;
   }
 
-  // Detect Apple devices for better debugging
+  // Detect Apple devices
   const isAppleDevice = /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-  if (isAppleDevice) {
-    console.log('[VideoLock] 🍎 Apple device detected:', navigator.userAgent);
-    console.log('[VideoLock] 🍎 Safari browser:', isSafari);
-  }
 
   // In-memory fallback for Safari private mode
   let memoryStorage = {};
   let localStorageAvailable = true;
 
-  // Test if localStorage is available (comprehensive test for Apple devices)
+  // Test if localStorage is available
   try {
-    // Test basic availability
     if (!window.localStorage) {
       throw new Error('localStorage is not defined');
     }
 
-    // Test write capability
     const testKey = '__videolock_test__';
     localStorage.setItem(testKey, 'test');
     const testValue = localStorage.getItem(testKey);
@@ -54,27 +47,13 @@
       throw new Error('localStorage read/write test failed');
     }
 
-    console.log('[VideoLock] ✅ localStorage is available and working');
-
-    // Log existing progress data on startup
+    // Pre-populate memory storage with existing data
     const existingData = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (existingData) {
-      const parsed = JSON.parse(existingData);
-      console.log('[VideoLock] 📚 Existing progress data found in localStorage:', parsed);
-      // Pre-populate memory storage with existing data
-      memoryStorage = Object.assign({}, parsed);
-      console.log('[VideoLock] 📚 Pre-populated memory storage with', Object.keys(memoryStorage).length, 'entries');
-    } else {
-      console.log('[VideoLock] 📚 No existing progress data in localStorage (fresh start)');
+      memoryStorage = Object.assign({}, JSON.parse(existingData));
     }
   } catch (e) {
-    console.warn('[VideoLock] ⚠️ localStorage not available:', e.message);
-    if (isAppleDevice) {
-      console.warn('[VideoLock] 🍎 This is common on Apple devices in Private Browsing mode');
-      console.warn('[VideoLock] 🍎 Using in-memory storage (progress will not persist across page reloads)');
-    } else {
-      console.warn('[VideoLock] Using in-memory storage (progress will not persist across page reloads)');
-    }
+    console.warn('[VideoLock] localStorage not available:', e.message, '- Using in-memory storage');
     localStorageAvailable = false;
   }
 
@@ -85,69 +64,45 @@
         if (localStorageAvailable) {
           const data = localStorage.getItem(CONFIG.STORAGE_KEY);
           const progress = data ? JSON.parse(data) : {};
-          const percentage = progress[resourceId] || 0;
-          console.log(`[VideoLock] 📖 Reading progress for resourceId ${resourceId}: ${percentage}%`);
-          return percentage;
+          return progress[resourceId] || 0;
         } else {
-          const percentage = memoryStorage[resourceId] || 0;
-          console.log(`[VideoLock] 📖 Reading progress from memory for resourceId ${resourceId}: ${percentage}%`);
-          return percentage;
+          return memoryStorage[resourceId] || 0;
         }
       } catch (e) {
-        console.warn('[VideoLock] Error reading progress, using memory fallback:', e);
+        console.warn('[VideoLock] Error reading progress:', e.message);
         return memoryStorage[resourceId] || 0;
       }
     },
 
     set: function(resourceId, percentage) {
       try {
-        // Always update memory storage first (reliable fallback)
-        const previousMemory = memoryStorage[resourceId] || 0;
+        // Always update memory storage first
         memoryStorage[resourceId] = Math.max(memoryStorage[resourceId] || 0, percentage);
-        console.log(`[VideoLock] 💾 Saving progress for resourceId ${resourceId}: ${percentage}% (was ${previousMemory}%)`);
 
         // Try to update localStorage if available
         if (localStorageAvailable) {
           try {
             const data = localStorage.getItem(CONFIG.STORAGE_KEY);
             const progress = data ? JSON.parse(data) : {};
-            const previousStorage = progress[resourceId] || 0;
             progress[resourceId] = Math.max(progress[resourceId] || 0, percentage);
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
-            console.log(`[VideoLock]   ✓ Saved to localStorage (was ${previousStorage}%, now ${progress[resourceId]}%)`);
-            console.log(`[VideoLock]   📊 Full progress data:`, progress);
           } catch (storageError) {
-            // Handle quota exceeded or other storage errors
             if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
-              console.warn('[VideoLock] ⚠️ localStorage quota exceeded');
-              if (isAppleDevice) {
-                console.warn('[VideoLock] 🍎 This can happen on Apple devices when storage is full');
-              }
+              console.warn('[VideoLock] localStorage quota exceeded - switching to memory-only mode');
             } else {
-              console.warn('[VideoLock] ⚠️ localStorage error:', storageError.message);
+              console.warn('[VideoLock] localStorage error:', storageError.message);
             }
-            console.warn('[VideoLock] ⚠️ Switching to memory-only mode');
             localStorageAvailable = false;
-          }
-        } else {
-          if (isAppleDevice) {
-            console.log(`[VideoLock]   ⚠️ localStorage not available (using memory), progress saved in memory only`);
-          } else {
-            console.log(`[VideoLock]   ⚠️ localStorage not available, using memory only`);
           }
         }
       } catch (e) {
-        console.warn('[VideoLock] ❌ Error saving progress:', e.message);
-        // Memory storage should still work
-        console.log('[VideoLock] Progress still saved in memory');
+        console.warn('[VideoLock] Error saving progress:', e.message);
       }
     },
 
     isCompleted: function(resourceId) {
       const progress = this.get(resourceId);
-      const completed = progress >= CONFIG.UNLOCK_THRESHOLD;
-      console.log(`[VideoLock]   ↳ isCompleted check: ${progress}% >= ${CONFIG.UNLOCK_THRESHOLD}% = ${completed}`);
-      return completed;
+      return progress >= CONFIG.UNLOCK_THRESHOLD;
     },
 
     // Diagnostic function for debugging storage issues
@@ -181,36 +136,21 @@
     const videos = [];
     const wistiaContainers = document.querySelectorAll('[class*="wistia_embed"]');
 
-    console.log(`[VideoLock] Found ${wistiaContainers.length} Wistia container(s) in DOM`);
-
-    wistiaContainers.forEach((container, domIndex) => {
+    wistiaContainers.forEach((container) => {
       const resourceId = container.getAttribute('data-resource-id');
       const lockVideo = container.getAttribute('data-lock-video');
 
-      console.log(`[VideoLock]   Container #${domIndex}: resourceId = ${resourceId}, data-lock-video = ${lockVideo}`);
-
       if (resourceId && isNumeric(resourceId)) {
-        // Check if video should be exempt from locking
         const isAlwaysUnlocked = lockVideo === 'false';
-
         videos.push({
           container: container,
           resourceId: resourceId,
           index: videos.length,
           isAlwaysUnlocked: isAlwaysUnlocked
         });
-
-        if (isAlwaysUnlocked) {
-          console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1} (ALWAYS UNLOCKED - data-lock-video="false")`);
-        } else {
-          console.log(`[VideoLock]     ✓ Added as video #${videos.length - 1} (normal locking behavior)`);
-        }
-      } else {
-        console.warn(`[VideoLock]     ✗ Skipped (missing or invalid resourceId)`);
       }
     });
 
-    console.log(`[VideoLock] Total videos with valid resourceId: ${videos.length}`);
     return videos;
   }
 
@@ -336,24 +276,20 @@
     // Auto-hide badge after 3 seconds (fade out + remove)
     setTimeout(function() {
       badge.classList.add('fade-out');
-      // Remove from DOM after fade animation completes
       setTimeout(function() {
         if (badge.parentNode) {
           badge.remove();
-          console.log('[VideoLock] ✓ Unlocked badge auto-removed after display period');
         }
-      }, 500); // Wait for 0.5s fade-out transition
-    }, 3000); // Show for 3 seconds
+      }, 500);
+    }, 3000);
   }
 
   // Lock a video
   function lockVideo(videoData) {
     const container = videoData.container;
-    console.log(`[VideoLock] 🔒 lockVideo called for resourceId: ${videoData.resourceId}`);
 
     // Make sure container is positioned relatively
     if (!container.closest('.video-container-wrapper')) {
-      console.log(`[VideoLock]   - Creating wrapper for container`);
       const wrapper = document.createElement('div');
       wrapper.className = 'video-container-wrapper';
       container.parentNode.insertBefore(wrapper, container);
@@ -363,12 +299,8 @@
     // Add overlay if not present
     const existingOverlay = container.querySelector('.video-lock-overlay');
     if (!existingOverlay) {
-      console.log(`[VideoLock]   - Creating and appending overlay`);
       const overlay = createLockOverlay(videoData);
       container.appendChild(overlay);
-      console.log(`[VideoLock]   ✓ Overlay added successfully`);
-    } else {
-      console.log(`[VideoLock]   - Overlay already exists, skipping`);
     }
   }
 
@@ -378,12 +310,12 @@
     const overlay = container.querySelector('.video-lock-overlay');
 
     if (overlay) {
-      console.log(`[VideoLock] 🔓 Removing overlay for resourceId: ${videoData.resourceId}`);
       overlay.remove();
       addUnlockedBadge(container);
-      // Mark container as unlocked to prevent re-locking
-      container.setAttribute('data-video-unlocked', 'true');
     }
+
+    // Mark container as unlocked to prevent re-locking
+    container.setAttribute('data-video-unlocked', 'true');
   }
 
   // Check if previous videos are completed
@@ -392,22 +324,14 @@
 
     for (let i = 0; i < currentIndex; i++) {
       // Skip videos that are always unlocked (data-lock-video="false")
-      // They don't need to be completed for sequential unlocking
       if (videos[i].isAlwaysUnlocked) {
-        console.log(`[VideoLock] Checking video #${i} (resourceId: ${videos[i].resourceId}) - SKIPPED (data-lock-video="false")`);
         continue;
       }
 
-      const progress = VideoProgress.get(videos[i].resourceId);
-      const isCompleted = VideoProgress.isCompleted(videos[i].resourceId);
-      console.log(`[VideoLock] Checking video #${i} (resourceId: ${videos[i].resourceId}) - Progress: ${progress}%, Completed: ${isCompleted}`);
-
-      if (!isCompleted) {
-        console.log(`[VideoLock] Video #${i} not completed, video #${currentIndex} should remain locked`);
+      if (!VideoProgress.isCompleted(videos[i].resourceId)) {
         return false;
       }
     }
-    console.log(`[VideoLock] All previous videos completed for video #${currentIndex}`);
     return true;
   }
 
@@ -416,25 +340,15 @@
     const videos = getAllVideos();
     if (videos.length === 0) return;
 
-    console.log(`[VideoLock] ===== Initializing ${videos.length} video(s) =====`);
-
     // Process each video
     videos.forEach((videoData, index) => {
       const container = videoData.container;
       const isCurrentlyLocked = container.querySelector('.video-lock-overlay') !== null;
       const wasExplicitlyUnlocked = container.getAttribute('data-video-unlocked') === 'true';
 
-      console.log(`[VideoLock] Processing video #${index} (resourceId: ${videoData.resourceId})`);
-      console.log(`[VideoLock]   - Currently locked: ${isCurrentlyLocked}`);
-      console.log(`[VideoLock]   - Was explicitly unlocked: ${wasExplicitlyUnlocked}`);
-      console.log(`[VideoLock]   - Always unlocked (data-lock-video="false"): ${videoData.isAlwaysUnlocked}`);
-
       // Check if video should always be unlocked (data-lock-video="false")
       if (videoData.isAlwaysUnlocked) {
-        console.log(`[VideoLock]   ✓ Keeping unlocked (data-lock-video="false" - exempt from locking)`);
-        // Remove overlay if it exists
         if (isCurrentlyLocked) {
-          console.log(`[VideoLock]   → ACTION: Removing overlay from always-unlocked video`);
           unlockVideo(videoData);
         }
         return;
@@ -442,24 +356,21 @@
 
       // Never re-lock a video that was explicitly unlocked
       if (wasExplicitlyUnlocked) {
-        console.log(`[VideoLock]   ✓ Keeping unlocked (was explicitly unlocked before)`);
         return;
       }
 
       const shouldBeUnlocked = isPreviousVideosCompleted(videos, index);
-      console.log(`[VideoLock]   - Should be unlocked: ${shouldBeUnlocked}`);
 
       // Determine action
       if (shouldBeUnlocked && isCurrentlyLocked) {
         // Video should be unlocked but is currently locked
-        console.log(`[VideoLock]   → ACTION: Unlocking video #${index}`);
+        unlockVideo(videoData);
+      } else if (shouldBeUnlocked && !isCurrentlyLocked) {
+        // Video should be unlocked and isn't locked - mark it to prevent future re-locking
         unlockVideo(videoData);
       } else if (!shouldBeUnlocked && !isCurrentlyLocked) {
         // Video should be locked but is currently unlocked
-        console.log(`[VideoLock]   → ACTION: Locking video #${index}`);
         lockVideo(videoData);
-      } else {
-        console.log(`[VideoLock]   → ACTION: No change needed (already in correct state)`);
       }
     });
 
@@ -493,12 +404,10 @@
 
           // Check if we should unlock next video
           if (percentage >= CONFIG.UNLOCK_THRESHOLD) {
-            console.log(`[VideoLock] Video ${resourceId} reached ${percentage}% - checking if next video should unlock`);
             const nextVideoIndex = videoData.index + 1;
             if (nextVideoIndex < videos.length) {
               const nextVideo = videos[nextVideoIndex];
               if (isPreviousVideosCompleted(videos, nextVideoIndex)) {
-                console.log(`[VideoLock] Unlocking next video (index ${nextVideoIndex})`);
                 unlockVideo(nextVideo);
               }
             }

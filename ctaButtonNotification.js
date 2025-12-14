@@ -1,12 +1,54 @@
-// Parse the URL to extract parameters
+// Parse the URL to extract parameters - SANITIZED to prevent XSS
 const parsedUrl = new URL(window.location.href);
-const userId = parsedUrl.searchParams.get('userId');
-const contactId = parsedUrl.searchParams.get('contactId');
-const resourceId = parsedUrl.searchParams.get('resourceId');
+const userIdRaw = parsedUrl.searchParams.get('userId') || '';
+const contactIdRaw = parsedUrl.searchParams.get('contactId') || '';
+const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
+
+// Validate that IDs are numeric only (prevent XSS injection)
+const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+
+// Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
+const ALLOWED_REDIRECT_DOMAINS = [
+  'rapidfunnel.com',
+  'my.rapidfunnel.com',
+  'app.rapidfunnel.com',
+  'apiv2.rapidfunnel.com',
+  'thrivewithtwtapp.com',
+  'kajabi.com',
+  'twtmentorship.com'
+];
+
+// Helper function to validate URL against whitelist
+function isUrlAllowed(url) {
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+    const hostname = urlObj.hostname;
+
+    const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
+      return hostname === domain || hostname.endsWith('.' + domain);
+    });
+
+    if (!isAllowed) {
+      console.warn('[CTA Notification] Redirect blocked - domain not in whitelist:', hostname);
+    }
+    return isAllowed;
+  } catch (e) {
+    console.warn('[CTA Notification] Invalid URL format:', url);
+    return false;
+  }
+}
 
 // Helper function to process URL with parameters
 function processUrlWithParams(url) {
   if (!url) return url;
+
+  // SECURITY: Validate URL against whitelist before processing
+  if (!isUrlAllowed(url)) {
+    console.error('[CTA Notification] URL blocked by security policy:', url);
+    return '#';
+  }
 
   console.log('[CTA Notification] Processing URL:', url);
   console.log('[CTA Notification] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);
@@ -58,6 +100,8 @@ function processUrlWithParams(url) {
     try {
       const urlObj = new URL(processedUrl);
 
+      // SECURITY: Parameters are already validated as numeric at the top of the file
+      // URLSearchParams.set() automatically encodes values
       if (userId) {
         urlObj.searchParams.set('userId', userId);
       }
@@ -126,9 +170,15 @@ function sendNotification(user, firstName, lastName, phone, email, btnLocation, 
   });
 }
 
-jQuery(function ($) {
-  $('[id^="ctaButton"]').on('click', function(event) {
-    event.preventDefault();
+// SECURITY: Check if jQuery is loaded before executing
+if (typeof jQuery === 'undefined') {
+  console.error('[CTA Notification] CRITICAL ERROR: jQuery is required but not loaded');
+  console.error('[CTA Notification] This script will not execute. Please ensure jQuery is loaded before this script.');
+  // Exit immediately - do not execute the rest of the code
+} else {
+  jQuery(function ($) {
+    $('[id^="ctaButton"]').on('click', function(event) {
+      event.preventDefault();
 
     // Capture redirect properties HERE where 'this' is the button
     var ctaButtonLocation = $(this).attr('data-description');
@@ -178,7 +228,8 @@ jQuery(function ($) {
         ctaButtonLocation,
         redirectUrl,
         target
-      );                
+      );
     }
   });
 });
+}

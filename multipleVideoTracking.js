@@ -1,8 +1,13 @@
 (function() {
   function initVideoTracking() {
     const url = new URL(window.location.href);
-    const userId = url.searchParams.get('userId');
-    const contactId = url.searchParams.get('contactId');
+    const userIdRaw = url.searchParams.get('userId') || '';
+    const contactIdRaw = url.searchParams.get('contactId') || '';
+
+    // Validate that IDs are numeric only (prevent XSS injection)
+    const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+    const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+
     const webinarElement = document.querySelector('#webinar');
     const webinar = webinarElement ? webinarElement.value || '' : '';
     const TRACK_INTERVAL_MS = 15000;

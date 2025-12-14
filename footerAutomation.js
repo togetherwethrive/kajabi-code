@@ -1,10 +1,22 @@
-jQuery(function ($) {
-  $(document).ready(function () {
-    // Parse the URL to extract userId, resourceID, and contactId
-    const parsedUrl = new URL(window.location.href);
-    const userId = parsedUrl.searchParams.get('userId');
-    const resourceId = parsedUrl.searchParams.get('resourceId');
-    const contactId = parsedUrl.searchParams.get('contactId');
+// SECURITY: Check if jQuery is loaded before executing
+if (typeof jQuery === 'undefined') {
+  console.error('[Footer Automation] CRITICAL ERROR: jQuery is required but not loaded');
+  console.error('[Footer Automation] This script will not execute. Please ensure jQuery is loaded before this script.');
+  // Exit immediately - do not execute the rest of the code
+} else {
+  jQuery(function ($) {
+    $(document).ready(function () {
+      // Parse the URL to extract userId, resourceID, and contactId - SANITIZED to prevent XSS
+      const parsedUrl = new URL(window.location.href);
+      const userIdRaw = parsedUrl.searchParams.get('userId') || '';
+      const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
+      const contactIdRaw = parsedUrl.searchParams.get('contactId') || '';
+
+    // Validate that IDs are numeric only (prevent XSS injection)
+    const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+    const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+    const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+
     const emailIcon = document.querySelector('span.fa.fa-envelope.fa-lg');
     const phoneIcon = document.querySelector('span.fa.fa-phone.fa-lg');
 
@@ -105,3 +117,4 @@ jQuery(function ($) {
     }
   });
 });
+}

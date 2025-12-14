@@ -10,6 +10,10 @@
     window.isValidating = false;
     window.validationComplete = false;
     window.VALIDATION_PASSED = false; // NEW: Explicit pass flag
+
+    // SECURITY: Debounce timer to prevent rapid submission attempts
+    let validationDebounceTimer = null;
+    const DEBOUNCE_DELAY = 300; // milliseconds
     
     // BLOCK ALL AJAX CALLS to the contact creation endpoint until validation passes
     const originalAjax = jQuery.ajax;
@@ -56,17 +60,29 @@
         console.log('═══════════════════════════════════════════════════');
         console.log('VALIDATION STARTED');
         console.log('═══════════════════════════════════════════════════');
-        
+
+        // SECURITY: Clear any existing debounce timer
+        if (validationDebounceTimer) {
+            clearTimeout(validationDebounceTimer);
+        }
+
+        // SECURITY: Immediately disable the submit button to prevent race conditions
+        const submitButton = document.getElementById('contactFormSubmitBtn');
+        if (submitButton) {
+            submitButton.disabled = true;
+            console.log('✓ Submit button disabled immediately');
+        }
+
         // Reset validation flags
         window.VALIDATION_PASSED = false;
         window.validationComplete = false;
-        
+
         // Prevent multiple validation attempts
         if (window.isValidating) {
             console.log('⚠ Validation already in progress - ignoring duplicate request');
             return false;
         }
-        
+
         window.isValidating = true;
         
         // Get form elements
@@ -162,13 +178,19 @@
             console.error('Errors found:', errorMessages);
             console.error('VALIDATION_PASSED: FALSE');
             console.error('═══════════════════════════════════════════════════');
-            
+
             alert('VALIDATION FAILED:\n\n' + errorMessages.join('\n'));
-            
+
+            // SECURITY: Re-enable button after validation failure
+            if (submitButton) {
+                submitButton.disabled = false;
+                console.log('✓ Submit button re-enabled after validation failure');
+            }
+
             window.isValidating = false;
             window.validationComplete = false;
             window.VALIDATION_PASSED = false;
-            
+
             return false;
         }
         
@@ -281,30 +303,49 @@
         console.log('✓ Script element appended');
     }
     
+    // SECURITY: Debounced validation wrapper to prevent rapid-fire submissions
+    function debouncedValidateForm() {
+        // Clear any pending validation
+        if (validationDebounceTimer) {
+            clearTimeout(validationDebounceTimer);
+        }
+
+        // If already validating, ignore this call
+        if (window.isValidating) {
+            console.log('⚠ Validation already in progress - debounce ignored');
+            return;
+        }
+
+        // Set a small delay to catch rapid clicks
+        validationDebounceTimer = setTimeout(function() {
+            validateForm();
+        }, DEBOUNCE_DELAY);
+    }
+
     // Initialize - CAPTURE EVERYTHING
     jQuery(function($) {
         console.log('═══════════════════════════════════════════════════');
         console.log('INITIALIZING FORM VALIDATION');
         console.log('═══════════════════════════════════════════════════');
-        
+
         // Method 1: Form submit event
         $(document).on('submit', '#contactForm', function(event) {
             console.log('🛑 FORM SUBMIT EVENT INTERCEPTED');
             event.preventDefault();
             event.stopImmediatePropagation();
-            validateForm();
+            debouncedValidateForm();
             return false;
         });
-        
+
         // Method 2: Button click event
         $(document).on('click', '#contactFormSubmitBtn', function(event) {
             console.log('🛑 BUTTON CLICK EVENT INTERCEPTED');
             event.preventDefault();
             event.stopImmediatePropagation();
-            validateForm();
+            debouncedValidateForm();
             return false;
         });
-        
+
         // Method 3: Prevent native form submission
         const form = document.getElementById('contactForm');
         if (form) {
@@ -312,11 +353,11 @@
                 console.log('🛑 NATIVE FORM SUBMIT INTERCEPTED');
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                validateForm();
+                debouncedValidateForm();
                 return false;
             }, true); // Use capture phase
         }
-        
+
         // Method 4: Prevent button default action
         const button = document.getElementById('contactFormSubmitBtn');
         if (button) {
@@ -324,12 +365,12 @@
                 console.log('🛑 NATIVE BUTTON CLICK INTERCEPTED');
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                validateForm();
+                debouncedValidateForm();
                 return false;
             }, true); // Use capture phase
         }
-        
-        console.log('✓ All event listeners attached (jQuery + Native)');
+
+        console.log('✓ All event listeners attached (jQuery + Native) with debouncing');
         console.log('✓ AJAX interceptor active');
         console.log('✓ Validation script ready');
         console.log('═══════════════════════════════════════════════════');

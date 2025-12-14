@@ -14,10 +14,42 @@
     
     let isSubmitting = false;
     
-    // URL validation function
+    // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
+    const ALLOWED_REDIRECT_DOMAINS = [
+        'rapidfunnel.com',
+        'my.rapidfunnel.com',
+        'app.rapidfunnel.com',
+        'apiv2.rapidfunnel.com',
+        'thrivewithtwtapp.com',
+        'kajabi.com',
+        'twtmentorship.com'
+    ];
+
+    // URL validation function with whitelist check
     function isValidUrl(url) {
         const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/;
-        return urlPattern.test(url);
+        if (!urlPattern.test(url)) {
+            return false;
+        }
+
+        // Check against whitelist
+        try {
+            const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+            const hostname = urlObj.hostname;
+
+            // Check if hostname matches or is subdomain of allowed domains
+            const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
+                return hostname === domain || hostname.endsWith('.' + domain);
+            });
+
+            if (!isAllowed) {
+                console.warn('Redirect blocked - domain not in whitelist:', hostname);
+            }
+            return isAllowed;
+        } catch (e) {
+            console.warn('Invalid URL format:', url);
+            return false;
+        }
     }
     
     // Function to check if a URL has parameters
@@ -65,12 +97,16 @@
         isSubmitting = true;
         console.log('✓ Submission flag set - preventing duplicates');
         
-        // Get URL parameters
+        // Get URL parameters - SANITIZED to prevent XSS
         const url = window.location.href;
         const parsedUrl = new URL(url);
-        const userId = parsedUrl.searchParams.get('userId');
-        const resourceId = parsedUrl.searchParams.get('resourceId');
-        
+        const userIdRaw = parsedUrl.searchParams.get('userId') || '';
+        const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
+
+        // Validate that IDs are numeric only (prevent XSS injection)
+        const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+        const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+
         console.log('URL Parameters:', { userId, resourceId });
         
         // Get the container element
@@ -174,11 +210,12 @@
                     
                     if (redirectUrl && redirectUrl !== 'undefined' && redirectUrl !== 'YOUR_REDIRECT_URL' && isValidUrl(redirectUrl)) {
                         const separator = hasUrlParameters(redirectUrl) ? '&' : '?';
-                        redirectUrl = redirectUrl + separator + 
-                                     'userId=' + userId + 
-                                     '&resourceId=' + resourceId + 
-                                     '&contactId=' + response.contactId;
-                        
+                        // SECURITY: Use encodeURIComponent to safely add parameters
+                        redirectUrl = redirectUrl + separator +
+                                     'userId=' + encodeURIComponent(userId) +
+                                     '&resourceId=' + encodeURIComponent(resourceId) +
+                                     '&contactId=' + encodeURIComponent(response.contactId || '');
+
                         console.log('Redirecting to:', redirectUrl);
                         window.location.href = redirectUrl;
                     } else {

@@ -1,15 +1,57 @@
 (function() {
   console.log("[Button Display] Script loaded");
 
-  // Get URL parameters
+  // Get URL parameters - SANITIZED to prevent XSS
   const parsedUrl = new URL(window.location.href);
-  const userId = parsedUrl.searchParams.get('userId');
-  const contactId = parsedUrl.searchParams.get('contactId');
-  const resourceId = parsedUrl.searchParams.get('resourceId');
+  const userIdRaw = parsedUrl.searchParams.get('userId') || '';
+  const contactIdRaw = parsedUrl.searchParams.get('contactId') || '';
+  const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
+
+  // Validate that IDs are numeric only (prevent XSS injection)
+  const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+  const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+  const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+
+  // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
+  const ALLOWED_REDIRECT_DOMAINS = [
+    'rapidfunnel.com',
+    'my.rapidfunnel.com',
+    'app.rapidfunnel.com',
+    'apiv2.rapidfunnel.com',
+    'thrivewithtwtapp.com',
+    'kajabi.com',
+    'twtmentorship.com'
+  ];
+
+  // Helper function to validate URL against whitelist
+  function isUrlAllowed(url) {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const hostname = urlObj.hostname;
+
+      const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
+        return hostname === domain || hostname.endsWith('.' + domain);
+      });
+
+      if (!isAllowed) {
+        console.warn('[Button Display] Redirect blocked - domain not in whitelist:', hostname);
+      }
+      return isAllowed;
+    } catch (e) {
+      console.warn('[Button Display] Invalid URL format:', url);
+      return false;
+    }
+  }
 
   // Helper function to process URL with parameters
   function processUrlWithParams(url) {
     if (!url) return url;
+
+    // SECURITY: Validate URL against whitelist before processing
+    if (!isUrlAllowed(url)) {
+      console.error('[Button Display] URL blocked by security policy:', url);
+      return '#';
+    }
 
     console.log('[Button Display] Processing URL:', url);
     console.log('[Button Display] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);

@@ -1,13 +1,25 @@
-// Parse URL parameters
-const urlParams = new URL(window.location.href);
-const userId = urlParams.searchParams.get('userId');
-const resourceId = urlParams.searchParams.get('resourceId');
-const contactId = urlParams.searchParams.get('contactId');
-const pageName = document.title || "Unknown Page";
+// SECURITY: Check if jQuery is loaded before executing
+if (typeof jQuery === 'undefined' || typeof $ === 'undefined') {
+  console.error('[Asset Download] CRITICAL ERROR: jQuery is required but not loaded');
+  console.error('[Asset Download] This script will not execute. Please ensure jQuery is loaded before this script.');
+  // Exit early - don't define functions that require jQuery
+} else {
+  // Parse URL parameters - SANITIZED to prevent XSS
+  const urlParams = new URL(window.location.href);
+  const userIdRaw = urlParams.searchParams.get('userId') || '';
+  const resourceIdRaw = urlParams.searchParams.get('resourceId') || '';
+  const contactIdRaw = urlParams.searchParams.get('contactId') || '';
 
-// Send download tracking notification
-function sendDownloadNotification(user, firstName, lastName, phone, email, downloadLocation) {
-  $.ajax({
+  // Validate that IDs are numeric only (prevent XSS injection)
+  const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+  const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+  const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+
+  const pageName = document.title || "Unknown Page";
+
+  // Send download tracking notification
+  function sendDownloadNotification(user, firstName, lastName, phone, email, downloadLocation) {
+    $.ajax({
     url: 'https://app.rapidfunnel.com/api/mail/send-cta-email',
     type: 'POST',
     contentType: 'application/json',
@@ -187,11 +199,12 @@ if (document.readyState === 'loading') {
   initDownload();
 }
 
-// Export functions if using as a module
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    downloadAsset,
-    downloadAssetWithFetch,
-    initDownload
-  };
+  // Export functions if using as a module
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      downloadAsset,
+      downloadAssetWithFetch,
+      initDownload
+    };
+  }
 }
