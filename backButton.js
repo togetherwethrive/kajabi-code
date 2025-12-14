@@ -69,12 +69,62 @@
     }
   };
 
+  // Check if user came from another page
+  const hasReferrer = document.referrer && document.referrer !== '' && document.referrer !== window.location.href;
+
   // Save referrer URL when page loads (if we have one)
-  if (document.referrer && document.referrer !== window.location.href) {
+  if (hasReferrer) {
     console.log('[Back Button] Saving referrer URL:', document.referrer);
     BackButtonStorage.set(resourceId, undefined, document.referrer);
   } else {
     console.log('[Back Button] No referrer detected (direct navigation or same page)');
+  }
+
+  // Helper function to check if buttons should be shown at all
+  function shouldShowBackButton() {
+    // PRIORITY 1: Check if explicitly forced to show
+    const forceShow = document.body.getAttribute('data-show-back-button') === 'true';
+    if (forceShow) {
+      console.log('[Back Button] Force show enabled via data-show-back-button="true"');
+      return true;
+    }
+
+    // PRIORITY 2: Check if window.previousLessonStart is set
+    if (typeof window.previousLessonStart !== 'undefined' && window.previousLessonStart) {
+      console.log('[Back Button] Force show enabled via window.previousLessonStart');
+      return true;
+    }
+
+    // PRIORITY 3: Check if custom back URL is defined
+    const backButtonDiv = document.getElementById('back-button-url');
+    if (backButtonDiv && backButtonDiv.getAttribute('data-url')) {
+      console.log('[Back Button] Custom back URL defined - showing buttons');
+      return true;
+    }
+
+    const bodyBackUrl = document.body.getAttribute('data-back-button-url');
+    if (bodyBackUrl && bodyBackUrl.trim() !== '') {
+      console.log('[Back Button] Custom back URL in body attribute - showing buttons');
+      return true;
+    }
+
+    // PRIORITY 4: Check if user came from another page
+    if (hasReferrer) {
+      console.log('[Back Button] User came from another page - showing buttons');
+      return true;
+    }
+
+    // PRIORITY 5: Check if there's a saved referrer from previous visit
+    const savedReferrer = BackButtonStorage.getReferrer(resourceId);
+    if (savedReferrer) {
+      console.log('[Back Button] Saved referrer found - showing buttons');
+      return true;
+    }
+
+    // No valid reason to show back button
+    console.log('[Back Button] ⚠️ No referrer or custom URL detected - buttons will NOT be shown');
+    console.log('[Back Button] User appears to have navigated directly to this page');
+    return false;
   }
 
   // Check if Wistia videos exist on page
@@ -356,6 +406,16 @@
 
   // Show both buttons
   function showButtons(buttons, saveState = true) {
+    // IMPORTANT: Check if buttons should actually be shown
+    if (!shouldShowBackButton()) {
+      console.log('[Back Button] ⚠️ Buttons will NOT be displayed - no valid navigation source');
+      console.log('[Back Button] Reasons buttons might not show:');
+      console.log('[Back Button] - User navigated directly to page (no referrer)');
+      console.log('[Back Button] - No custom back URL defined');
+      console.log('[Back Button] - Not forced to show via data-show-back-button');
+      return; // Don't show buttons
+    }
+
     buttons.topButton.style.display = 'block';
     buttons.bottomButton.style.display = 'block';
     console.log('[Back Button] ✅ Both buttons are now visible!');
@@ -370,6 +430,13 @@
   // Set up video completion tracking
   function setupVideoTracking(buttons) {
     console.log('[Back Button] Setting up video tracking...');
+
+    // FIRST: Check if buttons should be shown at all
+    if (!shouldShowBackButton()) {
+      console.log('[Back Button] ⚠️ Back buttons will not be shown - no valid navigation source');
+      console.log('[Back Button] Skipping video tracking setup');
+      return; // Don't set up watchers if buttons won't be shown anyway
+    }
 
     // Check if page has attribute to always show buttons
     const alwaysShow = document.body.getAttribute(CONFIG.ALWAYS_SHOW_ATTRIBUTE);
@@ -391,7 +458,7 @@
       console.log('[Back Button] Buttons were previously shown for this page (from cache)');
       const savedReferrer = BackButtonStorage.getReferrer(resourceId);
       console.log('[Back Button] Saved referrer URL:', savedReferrer || 'None');
-      showButtons(buttons, false); // Show without re-saving
+      showButtons(buttons, false); // Show without re-saving (will still check shouldShowBackButton)
       return; // No need to set up watchers
     }
 

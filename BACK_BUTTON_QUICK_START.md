@@ -10,6 +10,13 @@ Add this blank div anywhere on your page:
 
 **That's it!** URL parameters (userId, contactId, resourceId) are automatically added to the URL!
 
+**🚨 IMPORTANT:** Back buttons only show if:
+- User came from another page (has referrer), OR
+- You define a custom back URL (recommended - the div above!), OR
+- You force show with `data-show-back-button="true"`
+
+**If user navigates directly to the page (no referrer) and you didn't define a custom URL = No back button shows.** This is smart - no point showing a useless back button!
+
 ---
 
 ## 📋 Copy-Paste Templates

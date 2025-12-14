@@ -151,9 +151,26 @@ Use placeholders to control which parameters are added:
 
 ---
 
-## Fallback Behavior
+## Button Visibility Rules ⚠️ IMPORTANT
 
-The back button uses a priority system:
+**Back buttons will ONLY appear if at least ONE of these conditions is true:**
+
+1. ✅ **User came from another page** (document.referrer exists)
+2. ✅ **Custom back URL defined** (via div or body attribute)
+3. ✅ **Forced to show** (`data-show-back-button="true"` or `window.previousLessonStart`)
+4. ✅ **Saved referrer from previous visit** (stored in localStorage)
+
+**If NONE of these are true, buttons will NOT show.**
+
+**Why?** If a user navigates directly to your page (types URL, bookmark, email link), there's no previous page to go back to. Showing a back button would be confusing and useless.
+
+**💡 Recommendation:** Always define a custom back URL using the div method to ensure buttons show reliably!
+
+---
+
+## Navigation Priority System
+
+When user clicks the back button, it navigates in this order:
 
 1. **PRIORITY 1**: URL from `#back-button-url` div (if present) ⭐ Recommended
 2. **PRIORITY 2**: URL from body `data-back-button-url` attribute (legacy support)
