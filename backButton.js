@@ -17,8 +17,12 @@
   // Get URL parameters for unique storage key - SANITIZED to prevent XSS
   const urlParams = new URLSearchParams(window.location.search);
   const resourceIdRaw = urlParams.get('resourceId') || '';
+  const userIdRaw = urlParams.get('userId') || '';
+  const contactIdRaw = urlParams.get('contactId') || '';
 
-  // Validate that resourceId is numeric only (prevent XSS injection)
+  // Validate that IDs are numeric only (prevent XSS injection)
+  const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+  const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
   // Fall back to pathname if no valid resourceId
   const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : window.location.pathname;
 
@@ -149,17 +153,111 @@
     console.log('[Back Button] Styles injected');
   }
 
+  // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
+  const ALLOWED_REDIRECT_DOMAINS = [
+    'rapidfunnel.com',
+    'my.rapidfunnel.com',
+    'app.rapidfunnel.com',
+    'apiv2.rapidfunnel.com',
+    'thrivewithtwtapp.com',
+    'kajabi.com',
+    'twtmentorship.com'
+  ];
+
+  // Helper function to validate URL against whitelist
+  function isUrlAllowed(url) {
+    if (!url) return false;
+
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const hostname = urlObj.hostname;
+
+      const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
+        return hostname === domain || hostname.endsWith('.' + domain);
+      });
+
+      if (!isAllowed) {
+        console.warn('[Back Button] URL blocked - domain not in whitelist:', hostname);
+      }
+      return isAllowed;
+    } catch (e) {
+      console.warn('[Back Button] Invalid URL format:', url);
+      return false;
+    }
+  }
+
+  // Helper function to process URL with parameters
+  function processUrlWithParams(url) {
+    if (!url) return url;
+
+    let processedUrl = url;
+
+    // Replace placeholders with actual values
+    if (userId) {
+      processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+      processedUrl = processedUrl.replace(/\[userId\]/g, userId);
+      processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+    }
+
+    if (contactId) {
+      processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+      processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+    }
+
+    if (resourceId) {
+      processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+      processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+    }
+
+    return processedUrl;
+  }
+
   // Navigate back function
   function navigateBack() {
-    const savedReferrer = BackButtonStorage.getReferrer(resourceId);
+    // PRIORITY 1: Check for URL in designated div element
+    const backButtonDiv = document.getElementById('back-button-url');
+    if (backButtonDiv) {
+      let backUrl = backButtonDiv.getAttribute('data-url');
+      if (backUrl && backUrl.trim() !== '') {
+        // Process URL parameters (replace placeholders)
+        backUrl = processUrlWithParams(backUrl);
 
-    if (savedReferrer) {
+        if (isUrlAllowed(backUrl)) {
+          console.log('[Back Button] Navigating to URL from #back-button-url div:', backUrl);
+          window.location.href = backUrl;
+          return;
+        } else {
+          console.error('[Back Button] URL in div blocked by security policy:', backUrl);
+        }
+      }
+    }
+
+    // PRIORITY 2: Check for data-back-button-url attribute on body (fallback for backward compatibility)
+    let bodyBackUrl = document.body.getAttribute('data-back-button-url');
+    if (bodyBackUrl && bodyBackUrl.trim() !== '') {
+      // Process URL parameters (replace placeholders)
+      bodyBackUrl = processUrlWithParams(bodyBackUrl);
+
+      if (isUrlAllowed(bodyBackUrl)) {
+        console.log('[Back Button] Navigating to URL from body attribute:', bodyBackUrl);
+        window.location.href = bodyBackUrl;
+        return;
+      } else {
+        console.error('[Back Button] body data-back-button-url blocked by security policy:', bodyBackUrl);
+      }
+    }
+
+    // PRIORITY 3: Check for saved referrer from localStorage
+    const savedReferrer = BackButtonStorage.getReferrer(resourceId);
+    if (savedReferrer && isUrlAllowed(savedReferrer)) {
       console.log('[Back Button] Navigating to saved referrer:', savedReferrer);
       window.location.href = savedReferrer;
-    } else {
-      console.log('[Back Button] No saved referrer, using browser history');
-      window.history.back();
+      return;
     }
+
+    // PRIORITY 4: Fall back to browser history
+    console.log('[Back Button] No valid URL found, using browser history');
+    window.history.back();
   }
 
   // Create back buttons

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Back Button Example - Lesson 3</title>
+</head>
+<body>
+
+  <!--
+    ⭐⭐⭐ IMPORTANT: Add this blank div with your back button URL ⭐⭐⭐
+
+    The div MUST have:
+    - id="back-button-url" (exactly this id)
+    - data-url="YOUR_URL_HERE" (your previous page URL)
+
+    Examples:
+
+    1. Simple static URL:
+       <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>
+
+    2. URL with dynamic parameters (RECOMMENDED):
+       <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2?userId={userId}&contactId={contactId}"></div>
+
+    The div is completely invisible and can be placed anywhere on the page!
+  -->
+
+  <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2?userId={userId}&contactId={contactId}&resourceId={resourceId}"></div>
+
+  <h1>Lesson 3: Advanced Techniques</h1>
+
+  <p>Watch the video below to continue your learning journey.</p>
+
+  <!-- Your Wistia Video Embed -->
+  <div class="wistia_embed wistia_async_abc123xyz"
+       data-resource-id="12345"
+       style="height:360px;width:640px">
+  </div>
+
+  <h2>Lesson Content</h2>
+  <p>Additional lesson content goes here...</p>
+
+  <!--
+    Back buttons will automatically appear:
+    - One at the top of the page
+    - One at the bottom (above footer if present)
+
+    They appear when:
+    - The last video on the page reaches 90% completion
+    - OR if you add data-show-back-button="true" to the <body> tag
+
+    To force buttons to show immediately:
+    <body data-show-back-button="true">
+  -->
+
+  <footer>
+    <p>&copy; 2024 Your Course Name</p>
+  </footer>
+
+  <!-- Load Wistia Script -->
+  <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
+
+  <!-- Load Back Button Script (make sure this loads after your other scripts) -->
+  <script src="backButton.js"></script>
+
+</body>
+</html>
