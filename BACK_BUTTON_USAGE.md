@@ -22,6 +22,11 @@ Add a blank div with a specific ID and data attribute anywhere on your page:
 
 **This is the most reliable and cleanest method.** The div is completely invisible and can be placed anywhere on the page.
 
+**✨ Automatic Parameter Handling:**
+- If you use placeholders like `{userId}`, they get replaced with actual values
+- If you DON'T use placeholders, parameters are automatically appended to the URL
+- Either way, userId, contactId, and resourceId are always included!
+
 ### Method 2: Using Body Attribute (Legacy Support)
 
 You can also add a `data-back-button-url` attribute to your `<body>` tag:
@@ -38,38 +43,40 @@ You can also add a `data-back-button-url` attribute to your `<body>` tag:
 
 ## URL Format Options
 
-### Option A: Simple Static URL
+**🎯 Important:** Parameters are ALWAYS added to your URL - either through placeholders OR auto-appended!
+
+### Option A: Simple URL (Auto-Append) ✨ Easiest
+Just provide the base URL - all parameters are added automatically:
+
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-1"></div>
 ```
 
-### Option B: URL with Placeholders (Dynamic Parameters) ⭐ Recommended
-You can use placeholders that will be automatically replaced with actual values:
+**Result:** `https://my.rapidfunnel.com/course/lesson-1?userId=12345&contactId=67890&resourceId=999`
+*(All parameters automatically appended!)*
+
+---
+
+### Option B: URL with Placeholders (Custom Control) 🎛️
+Use placeholders to control which parameters are added:
 
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-1?userId={userId}&contactId={contactId}"></div>
 ```
+
+**Result:** `https://my.rapidfunnel.com/course/lesson-1?userId=12345&contactId=67890`
+*(Only userId and contactId added - resourceId skipped because no placeholder)*
+
+---
 
 **Supported Placeholders:**
 - `{userId}` or `[userId]` or `[user-id]` - Replaced with the current user ID
 - `{contactId}` or `[contactId]` - Replaced with the current contact ID
 - `{resourceId}` or `[resourceId]` - Replaced with the current resource ID
 
-**Example Result:**
-If the current page URL is:
-```
-https://example.com/lesson?userId=12345&contactId=67890
-```
-
-And you set:
-```html
-<body data-back-button-url="https://my.rapidfunnel.com/previous?userId={userId}&contactId={contactId}">
-```
-
-The back button will navigate to:
-```
-https://my.rapidfunnel.com/previous?userId=12345&contactId=67890
-```
+**💡 Which to use?**
+- **Option A (Simple):** When you want all parameters passed through (most common)
+- **Option B (Placeholders):** When you need control over which parameters to include
 
 ---
 

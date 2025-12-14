@@ -12,15 +12,19 @@ Add this blank div anywhere on your page:
 
 ## 📋 Examples
 
-### Basic Example
+### Basic Example (Parameters Auto-Added)
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/previous-lesson"></div>
 ```
+**Result:** `https://my.rapidfunnel.com/course/previous-lesson?userId=12345&contactId=67890&resourceId=999`
+*(Parameters are automatically appended!)*
 
-### With Dynamic Parameters (Recommended)
+### With Placeholders (For Custom Positioning)
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/previous-lesson?userId={userId}&contactId={contactId}"></div>
 ```
+**Result:** `https://my.rapidfunnel.com/course/previous-lesson?userId=12345&contactId=67890`
+*(Placeholders are replaced with actual values)*
 
 ---
 
@@ -30,6 +34,34 @@ Add this blank div anywhere on your page:
 2. **URL must be in:** `data-url="..."`
 3. **Use full URLs:** Include `https://`
 4. **Div is invisible:** Place it anywhere on the page
+5. **Parameters are ALWAYS added:** Either via placeholders OR auto-appended
+
+---
+
+## 🔄 How Parameters are Added
+
+The script automatically handles URL parameters in two ways:
+
+### Option 1: Auto-Append (Simple)
+Just provide the base URL - parameters are added automatically:
+```html
+<div id="back-button-url" data-url="https://example.com/lesson-1"></div>
+```
+↓ Becomes ↓
+```
+https://example.com/lesson-1?userId=12345&contactId=67890&resourceId=999
+```
+
+### Option 2: Placeholders (Control)
+Use placeholders to control where/which parameters are added:
+```html
+<div id="back-button-url" data-url="https://example.com/lesson-1?userId={userId}"></div>
+```
+↓ Becomes ↓
+```
+https://example.com/lesson-1?userId=12345
+```
+*(Only userId is added because only {userId} placeholder was used)*
 
 ---
 
@@ -43,21 +75,27 @@ Add this blank div anywhere on your page:
 </body>
 ```
 
-**Lesson 2** (back to Lesson 1):
+**Lesson 2** (back to Lesson 1) - **SIMPLE METHOD**:
 ```html
 <body>
-  <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-1?userId={userId}&contactId={contactId}"></div>
+  <!-- Parameters auto-added! -->
+  <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-1"></div>
   <h1>Lesson 2</h1>
 </body>
 ```
+Back button goes to: `https://my.rapidfunnel.com/course/lesson-1?userId=XXX&contactId=YYY&resourceId=ZZZ`
 
-**Lesson 3** (back to Lesson 2):
+**Lesson 3** (back to Lesson 2) - **PLACEHOLDER METHOD**:
 ```html
 <body>
+  <!-- Placeholders replaced with actual values -->
   <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2?userId={userId}&contactId={contactId}"></div>
   <h1>Lesson 3</h1>
 </body>
 ```
+Back button goes to: `https://my.rapidfunnel.com/course/lesson-2?userId=XXX&contactId=YYY`
+
+**Both methods work! Choose whichever you prefer.**
 
 ---
 

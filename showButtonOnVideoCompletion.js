@@ -156,31 +156,62 @@
     }
   };
 
-  // Check if button exists on page
-  function checkButton() {
+  // Check if button exists on page (with retry mechanism)
+  function checkButton(retryCount) {
+    retryCount = retryCount || 0;
     const button = document.getElementById('videoButton');
+
     if (button) {
       console.log("[Button Display] ✓ Button found with ID 'videoButton'");
       return true;
     } else {
-      console.warn("[Button Display] ⚠️ Button with ID 'videoButton' not found on page");
+      console.warn(`[Button Display] ⚠️ Button with ID 'videoButton' not found (attempt ${retryCount + 1}/5)`);
+
+      // Retry up to 5 times with 1 second delay
+      if (retryCount < 4) {
+        setTimeout(function() {
+          if (!document.getElementById('videoButton')) {
+            checkButton(retryCount + 1);
+          } else {
+            console.log("[Button Display] ✓ Button found on retry - continuing initialization");
+            // Button appeared, continue with initialization
+            continueInitialization();
+          }
+        }, 1000);
+      } else {
+        console.error("[Button Display] ❌ Button still not found after 5 attempts - aborting");
+      }
       return false;
     }
+  }
+
+  let initStarted = false;
+
+  function continueInitialization() {
+    if (initStarted) return; // Prevent duplicate initialization
+    initStarted = true;
+
+    console.log("[Button Display] Continuing with video detection...");
+    setupVideoDetection();
   }
 
   function initButtonDisplay() {
     console.log("[Button Display] Initializing...");
 
-    // Check if button exists early
-    const hasButton = checkButton();
-    if (!hasButton) {
-      console.warn("[Button Display] Aborting - no button to display");
-      return;
+    // Check if button exists with retry mechanism
+    const hasButton = checkButton(0);
+    if (hasButton) {
+      // Button found immediately, continue
+      continueInitialization();
     }
+    // If button not found, checkButton will retry automatically
+  }
 
+  function setupVideoDetection() {
     window._wq = window._wq || [];
     window._allVideos = window._allVideos || [];
     let setupComplete = false;
+    let videoDetectionTimeout = null;
 
     _wq.push({
       _all: function(video) {
@@ -189,17 +220,32 @@
         // Store video reference
         window._allVideos.push(video);
 
-        // Set up watcher after a short delay to ensure all videos are collected
+        // Clear any existing timeout
+        if (videoDetectionTimeout) {
+          clearTimeout(videoDetectionTimeout);
+        }
+
+        // Set up watcher after a delay to ensure all videos are collected
+        // Use longer delay (3 seconds) to be more reliable
         if (!setupComplete) {
-          setTimeout(function() {
+          videoDetectionTimeout = setTimeout(function() {
             if (!setupComplete) {
               setupComplete = true;
+              console.log(`[Button Display] Video detection complete - found ${window._allVideos.length} video(s)`);
               setupLastVideoWatcher();
             }
-          }, 2000);
+          }, 3000);
         }
       }
     });
+
+    // Fallback: If no videos detected after 5 seconds, log error
+    setTimeout(function() {
+      if (!setupComplete && window._allVideos.length === 0) {
+        console.error("[Button Display] ❌ No videos detected after 5 seconds");
+        console.error("[Button Display] Make sure Wistia videos exist on the page with proper embed code");
+      }
+    }, 5000);
   }
 
   function setupLastVideoWatcher() {
@@ -227,70 +273,116 @@
 
     // Watch for 90% completion
     function checkProgress() {
+      if (buttonShown) return; // Already shown, no need to check
+
       const percentWatched = lastVideo.percentWatched();
       const percentageValue = Math.floor(percentWatched * 100);
       console.log(`[Button Display] Progress check: ${percentageValue}%`);
 
-      if (!buttonShown && percentageValue >= 90) {
+      if (percentageValue >= 90) {
         console.log(`[Button Display] 90% threshold reached - showing button`);
         showButton(videoId);
         buttonShown = true;
-        if (checkInterval) {
-          clearInterval(checkInterval);
-          checkInterval = null;
-        }
+        stopChecking();
       }
+    }
+
+    // Function to stop checking
+    function stopChecking() {
+      if (checkInterval) {
+        clearInterval(checkInterval);
+        checkInterval = null;
+        console.log('[Button Display] Progress checking stopped');
+      }
+    }
+
+    // Function to start checking
+    function startChecking() {
+      if (buttonShown) return; // Don't start if button already shown
+
+      // Clear any existing interval
+      stopChecking();
+
+      // Check progress every second
+      checkInterval = setInterval(function() {
+        if (buttonShown) {
+          stopChecking();
+          return;
+        }
+        checkProgress();
+      }, 1000);
+
+      console.log('[Button Display] Progress checking started');
     }
 
     // Bind to play event to start checking
     lastVideo.bind('play', function() {
       console.log(`[Button Display] Video ${videoId} started playing - monitoring progress`);
-
-      // Clear any existing interval
-      if (checkInterval) {
-        clearInterval(checkInterval);
-      }
-
-      // Check progress every second
-      checkInterval = setInterval(function() {
-        if (buttonShown) {
-          clearInterval(checkInterval);
-          checkInterval = null;
-          return;
-        }
-        checkProgress();
-      }, 1000);
+      startChecking();
     });
 
-    // Bind to pause to stop checking
+    // Bind to pause - DON'T stop checking completely, just pause the interval
+    // Resume will be handled by play event
     lastVideo.bind('pause', function() {
-      if (checkInterval) {
-        clearInterval(checkInterval);
-        checkInterval = null;
-      }
+      console.log(`[Button Display] Video ${videoId} paused`);
+      // Check progress one more time in case they paused after 90%
+      checkProgress();
+      stopChecking();
     });
 
-    // Bind to end event
+    // Bind to end event - IMPORTANT for reliability
     lastVideo.bind('end', function() {
+      console.log(`[Button Display] Video ${videoId} ended event fired`);
       if (!buttonShown) {
-        console.log(`[Button Display] Video ${videoId} ended - showing button`);
+        console.log(`[Button Display] Showing button on video end`);
         showButton(videoId);
         buttonShown = true;
+        stopChecking();
       }
     });
 
-    // Check if video is already playing
-    if (lastVideo.state() === 'playing') {
-      console.log(`[Button Display] Video ${videoId} is already playing`);
-      checkInterval = setInterval(function() {
-        if (buttonShown) {
-          clearInterval(checkInterval);
-          checkInterval = null;
-          return;
-        }
-        checkProgress();
-      }, 1000);
+    // IMPORTANT: Check current progress immediately
+    // Video might already be past 90% when script initializes
+    const currentPercent = Math.floor(lastVideo.percentWatched() * 100);
+    console.log(`[Button Display] Initial video progress: ${currentPercent}%`);
+
+    if (currentPercent >= 90) {
+      console.log(`[Button Display] Video already past 90% - showing button immediately`);
+      showButton(videoId);
+      buttonShown = true;
+      return; // No need to set up watchers
     }
+
+    // Check if video is currently playing
+    const currentState = lastVideo.state();
+    console.log(`[Button Display] Current video state: ${currentState}`);
+
+    if (currentState === 'playing') {
+      console.log(`[Button Display] Video is already playing - starting progress checks`);
+      startChecking();
+    } else if (currentState === 'ended') {
+      console.log(`[Button Display] Video already ended - showing button`);
+      showButton(videoId);
+      buttonShown = true;
+    }
+
+    // Add a safety fallback: Check progress every 5 seconds regardless of events
+    // This catches edge cases where events might not fire properly
+    const safetyInterval = setInterval(function() {
+      if (buttonShown) {
+        clearInterval(safetyInterval);
+        return;
+      }
+
+      const percent = Math.floor(lastVideo.percentWatched() * 100);
+      if (percent >= 90) {
+        console.log(`[Button Display] Safety check: ${percent}% reached - showing button`);
+        showButton(videoId);
+        buttonShown = true;
+        clearInterval(safetyInterval);
+        stopChecking();
+      }
+    }, 5000);
   }
 
   function showButton(videoId) {

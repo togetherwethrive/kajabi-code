@@ -8,21 +8,23 @@ Add this blank div anywhere on your page:
 <div id="back-button-url" data-url="YOUR_PREVIOUS_PAGE_URL"></div>
 ```
 
-**That's it!** The back button will now navigate to that URL.
+**That's it!** URL parameters (userId, contactId, resourceId) are automatically added to the URL!
 
 ---
 
 ## 📋 Copy-Paste Templates
 
-### Template 1: Simple Static URL
+### Template 1: Simple (Auto-Appends Parameters)
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>
 ```
+**Result:** `https://my.rapidfunnel.com/course/lesson-2?userId=XXX&contactId=YYY&resourceId=ZZZ`
 
-### Template 2: URL with User Parameters (Recommended)
+### Template 2: With Placeholders (Custom Control)
 ```html
 <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2?userId={userId}&contactId={contactId}"></div>
 ```
+**Result:** `https://my.rapidfunnel.com/course/lesson-2?userId=XXX&contactId=YYY`
 
 ### Template 3: Show Buttons Immediately (Without Waiting for Video)
 ```html
@@ -30,6 +32,8 @@ Add this blank div anywhere on your page:
   <div id="back-button-url" data-url="https://my.rapidfunnel.com/course/lesson-2"></div>
 </body>
 ```
+
+**💡 Pro Tip:** Both methods add parameters! Template 1 is simpler, Template 2 gives you more control.
 
 ---
 

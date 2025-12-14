@@ -191,22 +191,57 @@
     if (!url) return url;
 
     let processedUrl = url;
+    let hasPlaceholder = false;
 
-    // Replace placeholders with actual values
+    // STEP 1: Check and replace placeholders first
     if (userId) {
-      processedUrl = processedUrl.replace(/\{userId\}/g, userId);
-      processedUrl = processedUrl.replace(/\[userId\]/g, userId);
-      processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+      if (processedUrl.includes('{userId}') || processedUrl.includes('[userId]') || processedUrl.includes('[user-id]')) {
+        processedUrl = processedUrl.replace(/\{userId\}/g, userId);
+        processedUrl = processedUrl.replace(/\[userId\]/g, userId);
+        processedUrl = processedUrl.replace(/\[user-id\]/g, userId);
+        hasPlaceholder = true;
+      }
     }
 
     if (contactId) {
-      processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
-      processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+      if (processedUrl.includes('{contactId}') || processedUrl.includes('[contactId]')) {
+        processedUrl = processedUrl.replace(/\{contactId\}/g, contactId);
+        processedUrl = processedUrl.replace(/\[contactId\]/g, contactId);
+        hasPlaceholder = true;
+      }
     }
 
     if (resourceId) {
-      processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
-      processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+      if (processedUrl.includes('{resourceId}') || processedUrl.includes('[resourceId]')) {
+        processedUrl = processedUrl.replace(/\{resourceId\}/g, resourceId);
+        processedUrl = processedUrl.replace(/\[resourceId\]/g, resourceId);
+        hasPlaceholder = true;
+      }
+    }
+
+    // STEP 2: If no placeholders were found, append parameters as query string
+    if (!hasPlaceholder) {
+      try {
+        const urlObj = new URL(processedUrl);
+
+        // SECURITY: Parameters are already validated as numeric at the top of the file
+        // URLSearchParams.set() automatically encodes values
+        if (userId) {
+          urlObj.searchParams.set('userId', userId);
+        }
+
+        if (contactId) {
+          urlObj.searchParams.set('contactId', contactId);
+        }
+
+        if (resourceId) {
+          urlObj.searchParams.set('resourceId', resourceId);
+        }
+
+        processedUrl = urlObj.toString();
+      } catch (e) {
+        console.warn('[Back Button] Invalid URL format:', processedUrl, e);
+      }
     }
 
     return processedUrl;
