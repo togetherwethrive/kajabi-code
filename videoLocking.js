@@ -6,7 +6,9 @@
     UNLOCK_THRESHOLD: 90, // Percentage watched to unlock next video
     STORAGE_KEY: 'kajabi_video_progress',
     CHECK_INTERVAL: 2000, // Check for new videos every 2 seconds
-    API_ENDPOINT: 'https://my.rapidfunnel.com/landing/resource/get-progress'
+    SESSION_STORAGE_KEY: 'kajabi_video_progress_session', // Fallback for Safari private mode
+    COOKIE_STORAGE_KEY: 'kjb_vp', // Cookie fallback for critical progress
+    COOKIE_MAX_AGE_DAYS: 365 // Keep cookie for 1 year
   };
 
   // Get URL parameters
@@ -28,11 +30,15 @@
   const isAppleDevice = /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  // In-memory fallback for Safari private mode
-  let memoryStorage = {};
+  // Multi-tier storage availability flags
   let localStorageAvailable = true;
+  let sessionStorageAvailable = true;
+  let cookieStorageAvailable = true;
 
-  // Test if localStorage is available
+  // In-memory fallback
+  let memoryStorage = {};
+
+  // Test localStorage availability
   try {
     if (!window.localStorage) {
       throw new Error('localStorage is not defined');
@@ -47,27 +53,176 @@
       throw new Error('localStorage read/write test failed');
     }
 
-    // Pre-populate memory storage with existing data
+    // Pre-populate memory storage with existing localStorage data
     const existingData = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (existingData) {
       memoryStorage = Object.assign({}, JSON.parse(existingData));
+      console.log('[VideoLock] ✓ localStorage available - loaded existing progress');
     }
   } catch (e) {
-    console.warn('[VideoLock] localStorage not available:', e.message, '- Using in-memory storage');
+    console.warn('[VideoLock] localStorage not available:', e.message);
     localStorageAvailable = false;
   }
 
-  // Storage management
+  // Test sessionStorage availability (Safari private mode fallback)
+  try {
+    if (!window.sessionStorage) {
+      throw new Error('sessionStorage is not defined');
+    }
+
+    const testKey = '__videolock_session_test__';
+    sessionStorage.setItem(testKey, 'test');
+    const testValue = sessionStorage.getItem(testKey);
+    sessionStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('sessionStorage read/write test failed');
+    }
+
+    // If localStorage failed but sessionStorage works, load from session
+    if (!localStorageAvailable) {
+      const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+      if (sessionData) {
+        memoryStorage = Object.assign({}, JSON.parse(sessionData));
+        console.log('[VideoLock] ✓ sessionStorage available - loaded session progress');
+      }
+    }
+  } catch (e) {
+    console.warn('[VideoLock] sessionStorage not available:', e.message);
+    sessionStorageAvailable = false;
+  }
+
+  // Cookie storage helper (for critical progress only due to size limits)
+  const CookieStorage = {
+    save: function(resourceId, percentage) {
+      try {
+        // Store only completed videos in cookies to save space (4KB limit)
+        if (percentage >= CONFIG.UNLOCK_THRESHOLD) {
+          const maxAge = CONFIG.COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+          const cookieName = CONFIG.COOKIE_STORAGE_KEY + '_' + resourceId;
+          document.cookie = cookieName + '=' + percentage + '; max-age=' + maxAge + '; path=/; SameSite=Lax';
+        }
+      } catch (e) {
+        // Cookie write failed, silently ignore
+      }
+    },
+
+    get: function(resourceId) {
+      try {
+        const cookieName = CONFIG.COOKIE_STORAGE_KEY + '_' + resourceId;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.indexOf(cookieName + '=') === 0) {
+            const value = cookie.substring(cookieName.length + 1);
+            return parseInt(value, 10) || 0;
+          }
+        }
+        return 0;
+      } catch (e) {
+        return 0;
+      }
+    },
+
+    loadAll: function() {
+      try {
+        const progress = {};
+        const cookies = document.cookie.split(';');
+        const prefix = CONFIG.COOKIE_STORAGE_KEY + '_';
+
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.indexOf(prefix) === 0) {
+            const parts = cookie.split('=');
+            if (parts.length === 2) {
+              const resourceId = parts[0].substring(prefix.length);
+              const percentage = parseInt(parts[1], 10) || 0;
+              progress[resourceId] = percentage;
+            }
+          }
+        }
+        return progress;
+      } catch (e) {
+        return {};
+      }
+    }
+  };
+
+  // Test cookie availability
+  try {
+    document.cookie = '__videolock_cookie_test__=test; max-age=60; SameSite=Lax';
+    const cookieWorks = document.cookie.indexOf('__videolock_cookie_test__=test') !== -1;
+    document.cookie = '__videolock_cookie_test__=; max-age=0'; // Delete test cookie
+
+    if (!cookieWorks) {
+      throw new Error('Cookies are disabled');
+    }
+
+    // If both storages failed, try loading from cookie
+    if (!localStorageAvailable && !sessionStorageAvailable) {
+      const cookieData = CookieStorage.loadAll();
+      if (Object.keys(cookieData).length > 0) {
+        memoryStorage = Object.assign({}, cookieData);
+        console.log('[VideoLock] ✓ Cookie storage available - loaded cookie progress');
+      }
+    }
+  } catch (e) {
+    console.warn('[VideoLock] Cookies not available:', e.message);
+    cookieStorageAvailable = false;
+  }
+
+  // Report storage status
+  if (!localStorageAvailable && !sessionStorageAvailable && !cookieStorageAvailable) {
+    console.warn('[VideoLock] ⚠️ All storage methods unavailable - using memory only (session will not persist)');
+  } else {
+    const availableMethods = [];
+    if (localStorageAvailable) availableMethods.push('localStorage');
+    if (sessionStorageAvailable) availableMethods.push('sessionStorage');
+    if (cookieStorageAvailable) availableMethods.push('cookies');
+    console.log('[VideoLock] Available storage methods:', availableMethods.join(', '));
+  }
+
+  // Storage management (multi-tier with fallbacks)
   const VideoProgress = {
     get: function(resourceId) {
       try {
+        let progress = 0;
+
+        // Check all available storage methods and use the highest value
+        // This handles cases where data might be in different places
+
+        // Check memory storage
+        progress = Math.max(progress, memoryStorage[resourceId] || 0);
+
+        // Check localStorage
         if (localStorageAvailable) {
-          const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-          const progress = data ? JSON.parse(data) : {};
-          return progress[resourceId] || 0;
-        } else {
-          return memoryStorage[resourceId] || 0;
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const localProgress = data ? JSON.parse(data) : {};
+            progress = Math.max(progress, localProgress[resourceId] || 0);
+          } catch (e) {
+            // Ignore read errors
+          }
         }
+
+        // Check sessionStorage (Safari private mode)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+            const sessionProgress = sessionData ? JSON.parse(sessionData) : {};
+            progress = Math.max(progress, sessionProgress[resourceId] || 0);
+          } catch (e) {
+            // Ignore read errors
+          }
+        }
+
+        // Check cookies (last resort)
+        if (cookieStorageAvailable) {
+          const cookieProgress = CookieStorage.get(resourceId);
+          progress = Math.max(progress, cookieProgress || 0);
+        }
+
+        return progress;
       } catch (e) {
         console.warn('[VideoLock] Error reading progress:', e.message);
         return memoryStorage[resourceId] || 0;
@@ -76,10 +231,10 @@
 
     set: function(resourceId, percentage) {
       try {
-        // Always update memory storage first
+        // Always update memory storage first (guaranteed to work)
         memoryStorage[resourceId] = Math.max(memoryStorage[resourceId] || 0, percentage);
 
-        // Try to update localStorage if available
+        // PRIORITY 1: Try localStorage (best option - persists across sessions)
         if (localStorageAvailable) {
           try {
             const data = localStorage.getItem(CONFIG.STORAGE_KEY);
@@ -88,12 +243,30 @@
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progress));
           } catch (storageError) {
             if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
-              console.warn('[VideoLock] localStorage quota exceeded - switching to memory-only mode');
+              console.warn('[VideoLock] localStorage quota exceeded - switching to fallback storage');
             } else {
               console.warn('[VideoLock] localStorage error:', storageError.message);
             }
             localStorageAvailable = false;
           }
+        }
+
+        // PRIORITY 2: Try sessionStorage (Safari private mode - persists during session)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+            const sessionProgress = sessionData ? JSON.parse(sessionData) : {};
+            sessionProgress[resourceId] = Math.max(sessionProgress[resourceId] || 0, percentage);
+            sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionProgress));
+          } catch (sessionError) {
+            console.warn('[VideoLock] sessionStorage error:', sessionError.message);
+            sessionStorageAvailable = false;
+          }
+        }
+
+        // PRIORITY 3: Try cookies (works even when storage APIs fail, but has size limits)
+        if (cookieStorageAvailable) {
+          CookieStorage.save(resourceId, percentage);
         }
       } catch (e) {
         console.warn('[VideoLock] Error saving progress:', e.message);
@@ -112,18 +285,39 @@
       console.log('  - Is Apple Device:', isAppleDevice);
       console.log('  - Is Safari:', isSafari);
       console.log('  - User Agent:', navigator.userAgent);
-      console.log('Storage Status:');
+      console.log('\nStorage Status:');
       console.log('  - localStorage Available:', localStorageAvailable);
-      console.log('  - Memory Storage Keys:', Object.keys(memoryStorage).length);
-      console.log('  - Memory Storage Data:', memoryStorage);
+      console.log('  - sessionStorage Available:', sessionStorageAvailable);
+      console.log('  - Cookies Available:', cookieStorageAvailable);
+      console.log('\nMemory Storage:');
+      console.log('  - Keys Count:', Object.keys(memoryStorage).length);
+      console.log('  - Data:', memoryStorage);
+
       if (localStorageAvailable) {
+        console.log('\nlocalStorage Data:');
         try {
           const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-          console.log('  - localStorage Data:', data ? JSON.parse(data) : 'empty');
+          console.log('  ', data ? JSON.parse(data) : 'empty');
         } catch (e) {
-          console.log('  - localStorage Read Error:', e.message);
+          console.log('  - Read Error:', e.message);
         }
       }
+
+      if (sessionStorageAvailable) {
+        console.log('\nsessionStorage Data:');
+        try {
+          const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+          console.log('  ', sessionData ? JSON.parse(sessionData) : 'empty');
+        } catch (e) {
+          console.log('  - Read Error:', e.message);
+        }
+      }
+
+      if (cookieStorageAvailable) {
+        console.log('\nCookie Data:');
+        console.log('  ', CookieStorage.loadAll());
+      }
+
       console.log('====================================');
     }
   };
@@ -429,6 +623,91 @@
 
   // Initialize when DOM is ready
   function init() {
+    console.log('[VideoLock] Initializing video locking system...');
+    console.log('[VideoLock] Safari optimized - using multi-tier storage');
+
+    // Safari-specific: Sync all storage tiers before unload
+    window.addEventListener('beforeunload', function() {
+      try {
+        // Force sync memory to all available storage methods
+        Object.keys(memoryStorage).forEach(function(resourceId) {
+          const progress = memoryStorage[resourceId];
+
+          // Write to all available storage tiers
+          if (localStorageAvailable) {
+            try {
+              const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+              const progressData = data ? JSON.parse(data) : {};
+              progressData[resourceId] = progress;
+              localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progressData));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (sessionStorageAvailable) {
+            try {
+              const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+              const sessionProgress = sessionData ? JSON.parse(sessionData) : {};
+              sessionProgress[resourceId] = progress;
+              sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionProgress));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (cookieStorageAvailable) {
+            CookieStorage.save(resourceId, progress);
+          }
+        });
+        console.log('[VideoLock] Progress synced before unload');
+      } catch (e) {
+        console.warn('[VideoLock] Error during unload sync:', e.message);
+      }
+    });
+
+    // Safari iOS: Handle page going to background
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        console.log('[VideoLock] Page hidden - syncing progress');
+        // Same sync logic as beforeunload
+        try {
+          Object.keys(memoryStorage).forEach(function(resourceId) {
+            const progress = memoryStorage[resourceId];
+
+            if (localStorageAvailable) {
+              try {
+                const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+                const progressData = data ? JSON.parse(data) : {};
+                progressData[resourceId] = progress;
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(progressData));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (sessionStorageAvailable) {
+              try {
+                const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+                const sessionProgress = sessionData ? JSON.parse(sessionData) : {};
+                sessionProgress[resourceId] = progress;
+                sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionProgress));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (cookieStorageAvailable) {
+              CookieStorage.save(resourceId, progress);
+            }
+          });
+        } catch (e) {
+          console.warn('[VideoLock] Error during visibility sync:', e.message);
+        }
+      }
+    });
+
+    // Start initializing video locking
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initializeVideoLocking);
     } else {
