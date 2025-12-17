@@ -254,11 +254,36 @@
       return;
     }
 
-    // Get the last video
-    const lastVideo = window._allVideos[window._allVideos.length - 1];
+    // CRITICAL: Sort videos by DOM order to ensure we get the actual last video on the page
+    // Safari may load videos asynchronously in different order than they appear in DOM
+    const sortedVideos = window._allVideos.slice().sort(function(a, b) {
+      const containerA = a.container;
+      const containerB = b.container;
+
+      // Use compareDocumentPosition to determine DOM order
+      const position = containerA.compareDocumentPosition(containerB);
+
+      // DOCUMENT_POSITION_FOLLOWING means containerB comes after containerA in DOM
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+        return -1; // A comes before B
+      }
+      // DOCUMENT_POSITION_PRECEDING means containerB comes before containerA in DOM
+      if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+        return 1; // A comes after B
+      }
+      return 0; // Same position (shouldn't happen)
+    });
+
+    console.log(`[Button Display] Videos sorted by DOM order (total: ${sortedVideos.length})`);
+    sortedVideos.forEach(function(video, index) {
+      console.log(`[Button Display] Position ${index + 1}: ${video.hashedId()}`);
+    });
+
+    // Get the last video based on DOM order
+    const lastVideo = sortedVideos[sortedVideos.length - 1];
     const videoId = lastVideo.hashedId();
 
-    console.log(`[Button Display] ✓ Identified last video: ${videoId} (${window._allVideos.length} total videos on page)`);
+    console.log(`[Button Display] ✓ Identified last video (by DOM position): ${videoId}`);
 
     let buttonShown = false;
     let checkInterval = null;
