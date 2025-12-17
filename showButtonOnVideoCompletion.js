@@ -128,30 +128,260 @@
   }
 
   // Configuration
-  const STORAGE_KEY = 'kajabi_button_unlocked';
+  const CONFIG = {
+    STORAGE_KEY: 'kajabi_button_unlocked',
+    SESSION_STORAGE_KEY: 'kajabi_button_unlocked_session',
+    COOKIE_STORAGE_KEY: 'kjb_btn',
+    COOKIE_MAX_AGE_DAYS: 365
+  };
 
-  // Storage management for button unlock state
+  // Detect Apple devices and Safari
+  const isAppleDevice = /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // Multi-tier storage availability flags
+  let localStorageAvailable = true;
+  let sessionStorageAvailable = true;
+  let cookieStorageAvailable = true;
+
+  // In-memory fallback
+  let memoryStorage = {};
+
+  // Test localStorage availability
+  try {
+    if (!window.localStorage) {
+      throw new Error('localStorage is not defined');
+    }
+
+    const testKey = '__button_test__';
+    localStorage.setItem(testKey, 'test');
+    const testValue = localStorage.getItem(testKey);
+    localStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('localStorage read/write test failed');
+    }
+
+    // Pre-populate memory storage with existing localStorage data
+    const existingData = localStorage.getItem(CONFIG.STORAGE_KEY);
+    if (existingData) {
+      memoryStorage = Object.assign({}, JSON.parse(existingData));
+      console.log('[Button Display] ✓ localStorage available - loaded existing state');
+    }
+  } catch (e) {
+    console.warn('[Button Display] localStorage not available:', e.message);
+    localStorageAvailable = false;
+  }
+
+  // Test sessionStorage availability (Safari private mode fallback)
+  try {
+    if (!window.sessionStorage) {
+      throw new Error('sessionStorage is not defined');
+    }
+
+    const testKey = '__button_session_test__';
+    sessionStorage.setItem(testKey, 'test');
+    const testValue = sessionStorage.getItem(testKey);
+    sessionStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('sessionStorage read/write test failed');
+    }
+
+    // If localStorage failed but sessionStorage works, load from session
+    if (!localStorageAvailable) {
+      const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+      if (sessionData) {
+        memoryStorage = Object.assign({}, JSON.parse(sessionData));
+        console.log('[Button Display] ✓ sessionStorage available - loaded session state');
+      }
+    }
+  } catch (e) {
+    console.warn('[Button Display] sessionStorage not available:', e.message);
+    sessionStorageAvailable = false;
+  }
+
+  // Cookie storage helper
+  const CookieStorage = {
+    save: function(videoId, unlocked) {
+      try {
+        if (unlocked) {
+          const maxAge = CONFIG.COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+          const cookieName = CONFIG.COOKIE_STORAGE_KEY + '_' + videoId;
+          document.cookie = cookieName + '=1; max-age=' + maxAge + '; path=/; SameSite=Lax';
+        }
+      } catch (e) {
+        // Cookie write failed, silently ignore
+      }
+    },
+
+    get: function(videoId) {
+      try {
+        const cookieName = CONFIG.COOKIE_STORAGE_KEY + '_' + videoId;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.indexOf(cookieName + '=') === 0) {
+            return true;
+          }
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    },
+
+    loadAll: function() {
+      try {
+        const unlocked = {};
+        const cookies = document.cookie.split(';');
+        const prefix = CONFIG.COOKIE_STORAGE_KEY + '_';
+
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.indexOf(prefix) === 0) {
+            const parts = cookie.split('=');
+            if (parts.length === 2) {
+              const videoId = parts[0].substring(prefix.length);
+              unlocked[videoId] = true;
+            }
+          }
+        }
+        return unlocked;
+      } catch (e) {
+        return {};
+      }
+    }
+  };
+
+  // Test cookie availability
+  try {
+    document.cookie = '__button_cookie_test__=test; max-age=60; SameSite=Lax';
+    const cookieWorks = document.cookie.indexOf('__button_cookie_test__=test') !== -1;
+    document.cookie = '__button_cookie_test__=; max-age=0'; // Delete test cookie
+
+    if (!cookieWorks) {
+      throw new Error('Cookies are disabled');
+    }
+
+    // If both storages failed, try loading from cookie
+    if (!localStorageAvailable && !sessionStorageAvailable) {
+      const cookieData = CookieStorage.loadAll();
+      if (Object.keys(cookieData).length > 0) {
+        memoryStorage = Object.assign({}, cookieData);
+        console.log('[Button Display] ✓ Cookie storage available - loaded cookie state');
+      }
+    }
+  } catch (e) {
+    console.warn('[Button Display] Cookies not available:', e.message);
+    cookieStorageAvailable = false;
+  }
+
+  // Report storage status
+  if (!localStorageAvailable && !sessionStorageAvailable && !cookieStorageAvailable) {
+    console.warn('[Button Display] ⚠️ All storage methods unavailable - using memory only (state will not persist)');
+  } else {
+    const availableMethods = [];
+    if (localStorageAvailable) availableMethods.push('localStorage');
+    if (sessionStorageAvailable) availableMethods.push('sessionStorage');
+    if (cookieStorageAvailable) availableMethods.push('cookies');
+    console.log('[Button Display] Available storage methods:', availableMethods.join(', '));
+  }
+
+  // Storage management for button unlock state (multi-tier with fallbacks)
   const ButtonStorage = {
     get: function(videoId) {
       try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        const unlocked = data ? JSON.parse(data) : {};
-        return unlocked[videoId] || false;
-      } catch (e) {
-        console.warn('[Button Display] Error reading unlock state:', e);
+        // Check all available storage methods and return true if found in any
+
+        // Check memory storage
+        if (memoryStorage[videoId]) {
+          return true;
+        }
+
+        // Check localStorage
+        if (localStorageAvailable) {
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const unlocked = data ? JSON.parse(data) : {};
+            if (unlocked[videoId]) {
+              return true;
+            }
+          } catch (e) {
+            // Ignore read errors
+          }
+        }
+
+        // Check sessionStorage (Safari private mode)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+            const sessionUnlocked = sessionData ? JSON.parse(sessionData) : {};
+            if (sessionUnlocked[videoId]) {
+              return true;
+            }
+          } catch (e) {
+            // Ignore read errors
+          }
+        }
+
+        // Check cookies (last resort)
+        if (cookieStorageAvailable) {
+          if (CookieStorage.get(videoId)) {
+            return true;
+          }
+        }
+
         return false;
+      } catch (e) {
+        console.warn('[Button Display] Error reading unlock state:', e.message);
+        return memoryStorage[videoId] || false;
       }
     },
 
     set: function(videoId, unlocked) {
       try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        const unlockedStates = data ? JSON.parse(data) : {};
-        unlockedStates[videoId] = unlocked;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(unlockedStates));
+        // Always update memory storage first (guaranteed to work)
+        memoryStorage[videoId] = unlocked;
+
+        // PRIORITY 1: Try localStorage (best option - persists across sessions)
+        if (localStorageAvailable) {
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const unlockedStates = data ? JSON.parse(data) : {};
+            unlockedStates[videoId] = unlocked;
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(unlockedStates));
+          } catch (storageError) {
+            if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
+              console.warn('[Button Display] localStorage quota exceeded - switching to fallback storage');
+            } else {
+              console.warn('[Button Display] localStorage error:', storageError.message);
+            }
+            localStorageAvailable = false;
+          }
+        }
+
+        // PRIORITY 2: Try sessionStorage (Safari private mode - persists during session)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+            const sessionUnlocked = sessionData ? JSON.parse(sessionData) : {};
+            sessionUnlocked[videoId] = unlocked;
+            sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionUnlocked));
+          } catch (sessionError) {
+            console.warn('[Button Display] sessionStorage error:', sessionError.message);
+            sessionStorageAvailable = false;
+          }
+        }
+
+        // PRIORITY 3: Try cookies (works even when storage APIs fail)
+        if (cookieStorageAvailable) {
+          CookieStorage.save(videoId, unlocked);
+        }
+
         console.log(`[Button Display] Button unlock state saved for video: ${videoId}`);
       } catch (e) {
-        console.warn('[Button Display] Error saving unlock state:', e);
+        console.warn('[Button Display] Error saving unlock state:', e.message);
       }
     }
   };
@@ -457,6 +687,89 @@
 
   // Safe initialization
   function safeInit() {
+    console.log('[Button Display] Safari optimized - using multi-tier storage');
+
+    // Safari-specific: Sync all storage tiers before unload
+    window.addEventListener('beforeunload', function() {
+      try {
+        // Force sync memory to all available storage methods
+        Object.keys(memoryStorage).forEach(function(videoId) {
+          const unlocked = memoryStorage[videoId];
+
+          // Write to all available storage tiers
+          if (localStorageAvailable) {
+            try {
+              const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+              const unlockedStates = data ? JSON.parse(data) : {};
+              unlockedStates[videoId] = unlocked;
+              localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(unlockedStates));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (sessionStorageAvailable) {
+            try {
+              const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+              const sessionUnlocked = sessionData ? JSON.parse(sessionData) : {};
+              sessionUnlocked[videoId] = unlocked;
+              sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionUnlocked));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (cookieStorageAvailable) {
+            CookieStorage.save(videoId, unlocked);
+          }
+        });
+        console.log('[Button Display] State synced before unload');
+      } catch (e) {
+        console.warn('[Button Display] Error during unload sync:', e.message);
+      }
+    });
+
+    // Safari iOS: Handle page going to background
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        console.log('[Button Display] Page hidden - syncing state');
+        // Same sync logic as beforeunload
+        try {
+          Object.keys(memoryStorage).forEach(function(videoId) {
+            const unlocked = memoryStorage[videoId];
+
+            if (localStorageAvailable) {
+              try {
+                const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+                const unlockedStates = data ? JSON.parse(data) : {};
+                unlockedStates[videoId] = unlocked;
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(unlockedStates));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (sessionStorageAvailable) {
+              try {
+                const sessionData = sessionStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+                const sessionUnlocked = sessionData ? JSON.parse(sessionData) : {};
+                sessionUnlocked[videoId] = unlocked;
+                sessionStorage.setItem(CONFIG.SESSION_STORAGE_KEY, JSON.stringify(sessionUnlocked));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (cookieStorageAvailable) {
+              CookieStorage.save(videoId, unlocked);
+            }
+          });
+        } catch (e) {
+          console.warn('[Button Display] Error during visibility sync:', e.message);
+        }
+      }
+    });
+
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initButtonDisplay);
     } else {
