@@ -26,35 +26,235 @@
   // Fall back to pathname if no valid resourceId
   const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : window.location.pathname;
 
-  // Storage management for back button data (visibility + referrer)
+  // Multi-tier storage availability flags
+  let localStorageAvailable = true;
+  let sessionStorageAvailable = true;
+  let cookieStorageAvailable = true;
+
+  // In-memory fallback
+  let memoryStorage = {};
+
+  // Test localStorage availability
+  try {
+    if (!window.localStorage) {
+      throw new Error('localStorage is not defined');
+    }
+
+    const testKey = '__backbutton_test__';
+    localStorage.setItem(testKey, 'test');
+    const testValue = localStorage.getItem(testKey);
+    localStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('localStorage read/write test failed');
+    }
+
+    // Pre-populate memory storage with existing localStorage data
+    const existingData = localStorage.getItem(CONFIG.STORAGE_KEY);
+    if (existingData) {
+      memoryStorage = Object.assign({}, JSON.parse(existingData));
+      console.log('[Back Button] ✓ localStorage available - loaded existing data');
+    }
+  } catch (e) {
+    console.warn('[Back Button] localStorage not available:', e.message);
+    localStorageAvailable = false;
+  }
+
+  // Test sessionStorage availability (Safari private mode fallback)
+  try {
+    if (!window.sessionStorage) {
+      throw new Error('sessionStorage is not defined');
+    }
+
+    const testKey = '__backbutton_session_test__';
+    sessionStorage.setItem(testKey, 'test');
+    const testValue = sessionStorage.getItem(testKey);
+    sessionStorage.removeItem(testKey);
+
+    if (testValue !== 'test') {
+      throw new Error('sessionStorage read/write test failed');
+    }
+
+    // If localStorage failed but sessionStorage works, load from session
+    if (!localStorageAvailable) {
+      const sessionKey = CONFIG.STORAGE_KEY + '_session';
+      const sessionData = sessionStorage.getItem(sessionKey);
+      if (sessionData) {
+        memoryStorage = Object.assign({}, JSON.parse(sessionData));
+        console.log('[Back Button] ✓ sessionStorage available - loaded session data');
+      }
+    }
+  } catch (e) {
+    console.warn('[Back Button] sessionStorage not available:', e.message);
+    sessionStorageAvailable = false;
+  }
+
+  // Cookie storage helper
+  const BackButtonCookieStorage = {
+    save: function(pageId, data) {
+      try {
+        const maxAge = 365 * 24 * 60 * 60; // 1 year
+        const cookieName = 'kjb_bb_' + pageId;
+        const cookieValue = encodeURIComponent(JSON.stringify(data));
+        document.cookie = cookieName + '=' + cookieValue + '; max-age=' + maxAge + '; path=/; SameSite=Lax';
+      } catch (e) {
+        // Cookie write failed, silently ignore
+      }
+    },
+
+    get: function(pageId) {
+      try {
+        const cookieName = 'kjb_bb_' + pageId;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.indexOf(cookieName + '=') === 0) {
+            const value = cookie.substring(cookieName.length + 1);
+            return JSON.parse(decodeURIComponent(value));
+          }
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+  };
+
+  // Test cookie availability
+  try {
+    document.cookie = '__backbutton_cookie_test__=test; max-age=60; SameSite=Lax';
+    const cookieWorks = document.cookie.indexOf('__backbutton_cookie_test__=test') !== -1;
+    document.cookie = '__backbutton_cookie_test__=; max-age=0'; // Delete test cookie
+
+    if (!cookieWorks) {
+      throw new Error('Cookies are disabled');
+    }
+
+    // If both storages failed, try loading from cookie
+    if (!localStorageAvailable && !sessionStorageAvailable) {
+      // Cookies stored per-page, we'll load when needed
+      console.log('[Back Button] ✓ Cookie storage available');
+    }
+  } catch (e) {
+    console.warn('[Back Button] Cookies not available:', e.message);
+    cookieStorageAvailable = false;
+  }
+
+  // Report storage status
+  if (!localStorageAvailable && !sessionStorageAvailable && !cookieStorageAvailable) {
+    console.warn('[Back Button] ⚠️ All storage methods unavailable - using memory only (state will not persist)');
+  } else {
+    const availableMethods = [];
+    if (localStorageAvailable) availableMethods.push('localStorage');
+    if (sessionStorageAvailable) availableMethods.push('sessionStorage');
+    if (cookieStorageAvailable) availableMethods.push('cookies');
+    console.log('[Back Button] Available storage methods:', availableMethods.join(', '));
+  }
+
+  // Storage management for back button data (visibility + referrer) - Multi-tier with fallbacks
   const BackButtonStorage = {
     get: function(pageId) {
       try {
-        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const pages = data ? JSON.parse(data) : {};
-        return pages[pageId] || { shown: false, referrer: null };
-      } catch (e) {
-        console.warn('[Back Button] Error reading button data:', e);
+        // Check all available storage methods
+
+        // Check memory storage
+        if (memoryStorage[pageId]) {
+          return memoryStorage[pageId];
+        }
+
+        // Check localStorage
+        if (localStorageAvailable) {
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const pages = data ? JSON.parse(data) : {};
+            if (pages[pageId]) {
+              return pages[pageId];
+            }
+          } catch (e) {
+            // Ignore read errors
+          }
+        }
+
+        // Check sessionStorage (Safari private mode)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionKey = CONFIG.STORAGE_KEY + '_session';
+            const sessionData = sessionStorage.getItem(sessionKey);
+            const sessionPages = sessionData ? JSON.parse(sessionData) : {};
+            if (sessionPages[pageId]) {
+              return sessionPages[pageId];
+            }
+          } catch (e) {
+            // Ignore read errors
+          }
+        }
+
+        // Check cookies (last resort)
+        if (cookieStorageAvailable) {
+          const cookieData = BackButtonCookieStorage.get(pageId);
+          if (cookieData) {
+            return cookieData;
+          }
+        }
+
         return { shown: false, referrer: null };
+      } catch (e) {
+        console.warn('[Back Button] Error reading button data:', e.message);
+        return memoryStorage[pageId] || { shown: false, referrer: null };
       }
     },
 
     set: function(pageId, isShown, referrerUrl) {
       try {
-        const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-        const pages = data ? JSON.parse(data) : {};
-
-        // Preserve existing referrer if not provided
-        const existingData = pages[pageId] || {};
-        pages[pageId] = {
+        // Get existing data
+        const existingData = this.get(pageId);
+        const newData = {
           shown: isShown !== undefined ? isShown : existingData.shown,
           referrer: referrerUrl !== undefined ? referrerUrl : existingData.referrer
         };
 
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(pages));
-        console.log(`[Back Button] Data saved for page: ${pageId}`, pages[pageId]);
+        // Always update memory storage first (guaranteed to work)
+        memoryStorage[pageId] = newData;
+
+        // PRIORITY 1: Try localStorage (best option - persists across sessions)
+        if (localStorageAvailable) {
+          try {
+            const data = localStorage.getItem(CONFIG.STORAGE_KEY);
+            const pages = data ? JSON.parse(data) : {};
+            pages[pageId] = newData;
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(pages));
+          } catch (storageError) {
+            if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
+              console.warn('[Back Button] localStorage quota exceeded - switching to fallback storage');
+            } else {
+              console.warn('[Back Button] localStorage error:', storageError.message);
+            }
+            localStorageAvailable = false;
+          }
+        }
+
+        // PRIORITY 2: Try sessionStorage (Safari private mode - persists during session)
+        if (sessionStorageAvailable) {
+          try {
+            const sessionKey = CONFIG.STORAGE_KEY + '_session';
+            const sessionData = sessionStorage.getItem(sessionKey);
+            const sessionPages = sessionData ? JSON.parse(sessionData) : {};
+            sessionPages[pageId] = newData;
+            sessionStorage.setItem(sessionKey, JSON.stringify(sessionPages));
+          } catch (sessionError) {
+            console.warn('[Back Button] sessionStorage error:', sessionError.message);
+            sessionStorageAvailable = false;
+          }
+        }
+
+        // PRIORITY 3: Try cookies (works even when storage APIs fail)
+        if (cookieStorageAvailable) {
+          BackButtonCookieStorage.save(pageId, newData);
+        }
+
+        console.log(`[Back Button] Data saved for page: ${pageId}`, newData);
       } catch (e) {
-        console.warn('[Back Button] Error saving button data:', e);
+        console.warn('[Back Button] Error saving button data:', e.message);
       }
     },
 
@@ -414,8 +614,9 @@
 
   // Show both buttons
   function showButtons(buttons, saveState = true) {
-    // IMPORTANT: Check if buttons should actually be shown
-    if (!shouldShowBackButton()) {
+    // IMPORTANT: Only check shouldShowBackButton if we're saving state (new show)
+    // If saveState is false, we're loading from cache and should show regardless
+    if (saveState && !shouldShowBackButton()) {
       console.log('[Back Button] ⚠️ Buttons will NOT be displayed - no valid navigation source');
       console.log('[Back Button] Reasons buttons might not show:');
       console.log('[Back Button] - User navigated directly to page (no referrer)');
@@ -424,14 +625,19 @@
       return; // Don't show buttons
     }
 
+    // If loading from cache (saveState = false), always show
+    if (!saveState) {
+      console.log('[Back Button] Showing buttons from cache (skipping validation)');
+    }
+
     buttons.topButton.style.display = 'block';
     buttons.bottomButton.style.display = 'block';
     console.log('[Back Button] ✅ Both buttons are now visible!');
 
-    // Save visibility state to localStorage
+    // Save visibility state to multi-tier storage
     if (saveState) {
       BackButtonStorage.set(resourceId, true);
-      console.log('[Back Button] State saved to localStorage');
+      console.log('[Back Button] State saved to multi-tier storage');
     }
   }
 
@@ -603,7 +809,91 @@
     console.log('[Back Button] ========================================');
     console.log('[Back Button] Script Initializing...');
     console.log('[Back Button] Document ready state:', document.readyState);
+    console.log('[Back Button] Safari/Android optimized - using multi-tier storage');
     console.log('[Back Button] ========================================');
+
+    // Safari/Android-specific: Sync all storage tiers before unload
+    window.addEventListener('beforeunload', function() {
+      try {
+        // Force sync memory to all available storage methods
+        Object.keys(memoryStorage).forEach(function(pageId) {
+          const data = memoryStorage[pageId];
+
+          // Write to all available storage tiers
+          if (localStorageAvailable) {
+            try {
+              const storageData = localStorage.getItem(CONFIG.STORAGE_KEY);
+              const pages = storageData ? JSON.parse(storageData) : {};
+              pages[pageId] = data;
+              localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(pages));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (sessionStorageAvailable) {
+            try {
+              const sessionKey = CONFIG.STORAGE_KEY + '_session';
+              const sessionData = sessionStorage.getItem(sessionKey);
+              const sessionPages = sessionData ? JSON.parse(sessionData) : {};
+              sessionPages[pageId] = data;
+              sessionStorage.setItem(sessionKey, JSON.stringify(sessionPages));
+            } catch (e) {
+              // Ignore
+            }
+          }
+
+          if (cookieStorageAvailable) {
+            BackButtonCookieStorage.save(pageId, data);
+          }
+        });
+        console.log('[Back Button] State synced before unload');
+      } catch (e) {
+        console.warn('[Back Button] Error during unload sync:', e.message);
+      }
+    });
+
+    // Safari iOS/Android: Handle page going to background
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        console.log('[Back Button] Page hidden - syncing state');
+        // Same sync logic as beforeunload
+        try {
+          Object.keys(memoryStorage).forEach(function(pageId) {
+            const data = memoryStorage[pageId];
+
+            if (localStorageAvailable) {
+              try {
+                const storageData = localStorage.getItem(CONFIG.STORAGE_KEY);
+                const pages = storageData ? JSON.parse(storageData) : {};
+                pages[pageId] = data;
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(pages));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (sessionStorageAvailable) {
+              try {
+                const sessionKey = CONFIG.STORAGE_KEY + '_session';
+                const sessionData = sessionStorage.getItem(sessionKey);
+                const sessionPages = sessionData ? JSON.parse(sessionData) : {};
+                sessionPages[pageId] = data;
+                sessionStorage.setItem(sessionKey, JSON.stringify(sessionPages));
+              } catch (e) {
+                // Ignore
+              }
+            }
+
+            if (cookieStorageAvailable) {
+              BackButtonCookieStorage.save(pageId, data);
+            }
+          });
+        } catch (e) {
+          console.warn('[Back Button] Error during visibility sync:', e.message);
+        }
+      }
+    });
 
     // Helper function to check if div exists and proceed
     function checkDivAndProceed() {
