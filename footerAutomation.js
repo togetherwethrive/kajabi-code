@@ -89,8 +89,8 @@ if (typeof jQuery === 'undefined') {
               $('.lastName').text(userData.lastName);
               $('.custom_custombookinglink').find('span').text('');
 
-              // Ensure booking link navigates properly (override any external handlers)
-              $('#customBookingLink, .custom_custombookinglink').on('click', function(e) {
+              // Ensure booking link and social links navigate properly (override any external handlers)
+              $('#customBookingLink, .custom_custombookinglink, .footer-btn-socials').on('click', function(e) {
                 e.stopPropagation();
                 var href = $(this).attr('href');
                 if (href && href !== '#' && href !== window.location.href) {
