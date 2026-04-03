@@ -2,7 +2,6 @@
 if (typeof jQuery === 'undefined') {
   console.error('[Footer Automation] CRITICAL ERROR: jQuery is required but not loaded');
   console.error('[Footer Automation] This script will not execute. Please ensure jQuery is loaded before this script.');
-  // Exit immediately - do not execute the rest of the code
 } else {
   jQuery(function ($) {
     $(document).ready(function () {
@@ -12,109 +11,115 @@ if (typeof jQuery === 'undefined') {
       const resourceIdRaw = parsedUrl.searchParams.get('resourceId') || '';
       const contactIdRaw = parsedUrl.searchParams.get('contactId') || '';
 
-    // Validate that IDs are numeric only (prevent XSS injection)
-    const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
-    const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
-    const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
+      // Validate that IDs are numeric only (prevent XSS injection)
+      const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
+      const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
+      const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
 
-    const emailIcon = document.querySelector('span.fa.fa-envelope.fa-lg');
-    const phoneIcon = document.querySelector('span.fa.fa-phone.fa-lg');
+      const emailIcon = document.querySelector('span.fa.fa-envelope.fa-lg');
+      const phoneIcon = document.querySelector('span.fa.fa-phone.fa-lg');
 
-    if (emailIcon) {
-      const styleSheet = document.styleSheets[0];
-      styleSheet.insertRule(
-        'span.fa.fa-envelope.fa-lg::before { content: ""; }',
-        styleSheet.cssRules.length
-      );
-    }
+      if (emailIcon) {
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(
+          'span.fa.fa-envelope.fa-lg::before { content: ""; }',
+          styleSheet.cssRules.length
+        );
+      }
 
-    if (phoneIcon) {
-      const styleSheet = document.styleSheets[0];
-      styleSheet.insertRule(
-        'span.fa.fa-phone.fa-lg::before { content: ""; }',
-        styleSheet.cssRules.length
-      );
-    }
+      if (phoneIcon) {
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(
+          'span.fa.fa-phone.fa-lg::before { content: ""; }',
+          styleSheet.cssRules.length
+        );
+      }
 
-    if (userId) {
-      $.get(
-        'https://apiv2.rapidfunnel.com/v2/users-details/' + userId,
-        function (data) {
-          const userData = data.data[0];
+      if (userId) {
+        $.get(
+          'https://apiv2.rapidfunnel.com/v2/users-details/' + userId,
+          function (data) {
+            const userData = data.data[0];
 
-          window.sharedData = window.sharedData || {};
-          window.sharedData.customBookingLink = userData.customBookingLink;
-  
-          // Loop over the userData keys
-          for (const key of Object.keys(userData)) {
-            const value = userData[key];
-            const $element = $('#' + key);
-  
-            if ($element.length) {
-              // If it's not the customBookingLink, set the text for the element (replace the placeholder text)
-              if (key !== 'customBookingLink' && !$element.hasClass('footer-btn-socials')) {
-                $element.text(value);
-              }
-  
-              if (key === 'profileImage') {
-                const imgSrc =
-                  value !== ''
-                    ? value
-                    : 'https://rfres.com/assets/img/icon-user-default.png';
-                $element.attr('src', imgSrc);
-              } else if (key === 'email') {
-                $element.attr('href', 'mailto:' + value).text(value);
-              } else if (key === 'phoneNumber') {
-                if (value !== '') {
-                  $element.attr('href', 'tel:' + value).text(value);
-                } else {
-                  $element.parent().hide(); // Hide the parent if phoneNumber is empty
+            window.sharedData = window.sharedData || {};
+            window.sharedData.customBookingLink = userData.customBookingLink;
+
+            // Loop over the userData keys
+            for (const key of Object.keys(userData)) {
+              const value = userData[key];
+              const $element = $('#' + key);
+
+              if ($element.length) {
+                // If it's not the customBookingLink, set the text for the element (replace the placeholder text)
+                if (key !== 'customBookingLink' && !$element.hasClass('footer-btn-socials')) {
+                  $element.text(value);
                 }
-              } else if (key === 'customBookingLink') {
-                if (value !== '') {
-                  $element.attr('href', value);
-                  $element.find('span').text('');
-                  $('.custom_custombookinglink').attr('href', value);
-                  $('.alternate-text').hide();
 
-                  // Trigger the custom event now that the href has been updated
-                  $(document).trigger('customBookingLinkUpdated');
-                } else {
-                  $element.hide();
-                  $('.custom_custombookinglink').hide();
+                if (key === 'profileImage') {
+                  const imgSrc =
+                    value !== ''
+                      ? value
+                      : 'https://rfres.com/assets/img/icon-user-default.png';
+                  $element.attr('src', imgSrc);
+                } else if (key === 'email') {
+                  $element.attr('href', 'mailto:' + value).text(value);
+                } else if (key === 'phoneNumber') {
+                  if (value !== '') {
+                    $element.attr('href', 'tel:' + value).text(value);
+                  } else {
+                    $element.parent().hide();
+                  }
+                } else if (key === 'customBookingLink') {
+                  if (value !== '') {
+                    $element.attr('href', value);
+                    $element.find('span').text('');
+                    $('.custom_custombookinglink').attr('href', value);
+                    $('.alternate-text').hide();
+
+                    // Trigger the custom event now that the href has been updated
+                    $(document).trigger('customBookingLinkUpdated');
+                  } else {
+                    $element.hide();
+                    $('.custom_custombookinglink').hide();
+                  }
                 }
               }
-            }
-  
-            // $('.email-block').find('span').text('');
-            $('.firstName').text(userData.firstName);
-            $('.lastName').text(userData.lastName);
-            // $('.phone-block').find('span').text('');
-            $('.custom_custombookinglink').find('span').text('');
-  
-            // Handle social links (replace href if available, otherwise hide the element)
-            $('.footer-social-links a').each(function () {
-              const socialId = $(this).attr('id'); // Get the id of the element (e.g., facebookUrl, twitterUrl)
-              
-              if (
-                userData.hasOwnProperty(socialId) &&
-                userData[socialId] &&
-                userData[socialId].trim() !== ''
-              ) {
-                $(this)
-                  .attr('href', userData[socialId]); // Set href if value exists in userData
+
+              $('.firstName').text(userData.firstName);
+              $('.lastName').text(userData.lastName);
+              $('.custom_custombookinglink').find('span').text('');
+
+              // Ensure booking link navigates properly (override any external handlers)
+              $('#customBookingLink, .custom_custombookinglink').on('click', function(e) {
+                e.stopPropagation();
+                var href = $(this).attr('href');
+                if (href && href !== '#' && href !== window.location.href) {
+                  window.location.href = href;
+                }
+              });
+
+              // Handle social links (replace href if available, otherwise hide the element)
+              $('.footer-social-links a').each(function () {
+                const socialId = $(this).attr('id');
+
+                if (
+                  userData.hasOwnProperty(socialId) &&
+                  userData[socialId] &&
+                  userData[socialId].trim() !== ''
+                ) {
+                  $(this)
+                    .attr('href', userData[socialId]);
                   $(this).find('span').text('');
-                  // .text('');
-              } else {
-                $(this).hide(); // Hide the element if no value exists for the socialId
-              }
-            });
+                } else {
+                  $(this).hide();
+                }
+              });
+            }
           }
-        }
-      ).fail(function () {
-        console.error('Failed to fetch user details.');
-      });
-    }
+        ).fail(function () {
+          console.error('Failed to fetch user details.');
+        });
+      }
+    });
   });
-});
 }
