@@ -505,6 +505,36 @@
     return processedUrl;
   }
 
+  // Handle nextPageButton - inject URL parameters into button's redirect URL
+  function setupNextPageButton() {
+    const nextPageButton = document.getElementById('nextPageButton');
+    if (!nextPageButton) {
+      return;
+    }
+
+    console.log('[Back Button] Found #nextPageButton - setting up parameter injection');
+
+    nextPageButton.addEventListener('click', function(event) {
+      event.preventDefault();
+
+      const buttonUrl = nextPageButton.getAttribute('href') || nextPageButton.getAttribute('data-url');
+
+      if (!buttonUrl) {
+        console.warn('[Back Button] #nextPageButton has no href or data-url attribute');
+        return;
+      }
+
+      const processedUrl = processUrlWithParams(buttonUrl);
+
+      if (isUrlAllowed(processedUrl)) {
+        console.log('[Back Button] Navigating with injected params:', processedUrl);
+        window.location.href = processedUrl;
+      } else {
+        console.error('[Back Button] URL in #nextPageButton blocked by security policy:', processedUrl);
+      }
+    });
+  }
+
   // Navigate back function
   function navigateBack() {
     // PRIORITY 1: Check for URL in designated div element
@@ -908,6 +938,7 @@
       }
 
       console.log('[Back Button] ✓ Found #back-button-url div - proceeding with initialization');
+      setupNextPageButton();
       injectStyles();
       const buttons = createBackButtons();
       setupVideoTracking(buttons);
@@ -925,6 +956,7 @@
       }
 
       console.log('[Back Button] ✓ Found #back-button-url div - proceeding with initialization');
+      setupNextPageButton();
       injectStyles();
       const buttons = createBackButtons();
       // Wait a bit for Wistia to load
