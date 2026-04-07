@@ -15,6 +15,7 @@
     'footerAutomation.js',
     'multipleVideoTracking.js',
     'videoLocking.js',
+    'nextPageButton.js',
     'backButton.js'
   ];
   
