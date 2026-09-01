@@ -23,6 +23,7 @@
         'thrivewithtwtapp.com',
         'kajabi.com',
         'twtmentorship.com'
+        'medistichealth.com'
     ];
 
     // URL validation function with whitelist check
