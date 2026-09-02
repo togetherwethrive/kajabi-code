@@ -2,6 +2,11 @@
   // jQuery CDN URL
   const jQueryUrl = 'https://code.jquery.com/jquery-3.7.1.min.js';
 
+  // Font Awesome CDN URL - required for icon classes used by footerAutomation.js
+  // (e.g. .fab.fa-facebook-f, .fa.fa-envelope) and any other icon markup on the site.
+  // Kajabi's theme CSS never includes this on its own, so it's injected here.
+  const fontAwesomeUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+
   // Base URL for all scripts - fetched directly from GitHub raw (no CDN, no propagation delay)
   const baseUrl = 'https://raw.githubusercontent.com/togetherwethrive/kajabi-code/main/';
 
@@ -18,6 +23,25 @@
     'nextPageButton.js',
     'backButton.js'
   ];
+
+  // Function to load a stylesheet, skipping if it's already on the page
+  // (e.g. loaded by a previous run, or added directly to the site's header code).
+  function loadStylesheet(url) {
+    return new Promise((resolve, reject) => {
+      const alreadyPresent = Array.from(document.styleSheets).some(sheet => sheet.href === url)
+        || Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.href === url);
+      if (alreadyPresent) {
+        resolve(url);
+        return;
+      }
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = url;
+      link.onload = () => resolve(url);
+      link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+      document.head.appendChild(link);
+    });
+  }
 
   // Function to load a regular (CORS/MIME-friendly) script, e.g. jQuery
   function loadScript(url) {
@@ -55,6 +79,12 @@
   // Load all scripts sequentially
   async function loadAllScripts() {
     try {
+      // Load Font Awesome in parallel - it doesn't block or depend on jQuery/scripts,
+      // and icons should be ready as soon as the DOM elements that use them render.
+      loadStylesheet(fontAwesomeUrl)
+        .then(() => console.log('✓ Loaded: Font Awesome'))
+        .catch(error => console.error('✗ Error loading Font Awesome:', error));
+
       // Load jQuery first if not already loaded
       if (typeof jQuery === 'undefined') {
         console.log('Loading jQuery...');
