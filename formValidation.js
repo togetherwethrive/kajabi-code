@@ -250,11 +250,11 @@
         }
         
         console.log('Creating script element...');
-        console.log('Source: https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/contactForm.js');
+        console.log('Source: https://cdn.statically.io/gh/togetherwethrive/kajabi-code@main/contactForm.js');
         
         // Create script element
         const script = document.createElement('script');
-        script.src = 'https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/contactForm.js';
+        script.src = 'https://cdn.statically.io/gh/togetherwethrive/kajabi-code@main/contactForm.js';
         script.async = false;
         script.type = 'text/javascript';
         
