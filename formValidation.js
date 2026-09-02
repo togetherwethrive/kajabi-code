@@ -249,58 +249,79 @@
             return;
         }
         
-        console.log('Creating script element...');
-        console.log('Source: https://cdn.statically.io/gh/togetherwethrive/kajabi-code@main/contactForm.js');
-        
-        // Create script element
-        const script = document.createElement('script');
-        script.src = 'https://cdn.statically.io/gh/togetherwethrive/kajabi-code@main/contactForm.js';
-        script.async = false;
-        script.type = 'text/javascript';
-        
-        // Handle script load success
-        script.onload = function() {
-            console.log('─────────────────────────────────────────────────');
-            console.log('✅ CONTACT SCRIPT LOADED FROM GITHUB');
-            console.log('─────────────────────────────────────────────────');
-            
-            window.contactScriptLoaded = true;
-            
-            // Wait for initialization
-            setTimeout(function() {
-                console.log('Checking for createContactAfterValidation function...');
-                
-                if (typeof window.createContactAfterValidation === 'function') {
-                    console.log('✅ Function found - calling now...');
-                    console.log('═══════════════════════════════════════════════════');
-                    window.createContactAfterValidation();
-                } else {
-                    console.error('❌ Function not found after load');
-                    alert('Error: Contact creation function not initialized.');
+        const contactScriptUrl = 'https://raw.githubusercontent.com/togetherwethrive/kajabi-code/main/contactForm.js?cb=' + Date.now();
+        console.log('Fetching script from GitHub raw...');
+        console.log('Source:', contactScriptUrl);
+
+        // raw.githubusercontent.com serves text/plain with X-Content-Type-Options: nosniff,
+        // so a plain <script src> pointed at it gets refused. Fetch the text ourselves and
+        // execute it via a Blob with an explicit JS MIME type instead.
+        fetch(contactScriptUrl, { cache: 'no-store' })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.text();
+            })
+            .then(function(code) {
+                const script = document.createElement('script');
+                script.src = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+
+                // Handle script load success
+                script.onload = function() {
+                    console.log('─────────────────────────────────────────────────');
+                    console.log('✅ CONTACT SCRIPT LOADED FROM GITHUB');
+                    console.log('─────────────────────────────────────────────────');
+
+                    window.contactScriptLoaded = true;
+
+                    // Wait for initialization
+                    setTimeout(function() {
+                        console.log('Checking for createContactAfterValidation function...');
+
+                        if (typeof window.createContactAfterValidation === 'function') {
+                            console.log('✅ Function found - calling now...');
+                            console.log('═══════════════════════════════════════════════════');
+                            window.createContactAfterValidation();
+                        } else {
+                            console.error('❌ Function not found after load');
+                            alert('Error: Contact creation function not initialized.');
+                            window.isValidating = false;
+                            window.validationComplete = false;
+                            window.VALIDATION_PASSED = false;
+                        }
+                    }, 300);
+                };
+
+                // Handle script execution error
+                script.onerror = function() {
+                    console.error('═══════════════════════════════════════════════════');
+                    console.error('❌ FAILED TO EXECUTE CONTACT SCRIPT');
+                    console.error('═══════════════════════════════════════════════════');
+
+                    alert('Error: Could not load form submission module. Please check your connection.');
                     window.isValidating = false;
                     window.validationComplete = false;
                     window.VALIDATION_PASSED = false;
-                }
-            }, 300);
-        };
-        
-        // Handle script load error
-        script.onerror = function() {
-            console.error('═══════════════════════════════════════════════════');
-            console.error('❌ FAILED TO LOAD CONTACT SCRIPT');
-            console.error('═══════════════════════════════════════════════════');
-            console.error('URL:', script.src);
-            
-            alert('Error: Could not load form submission module. Please check your connection.');
-            window.isValidating = false;
-            window.validationComplete = false;
-            window.VALIDATION_PASSED = false;
-        };
-        
-        // Append script
-        console.log('Appending script to document head...');
-        document.head.appendChild(script);
-        console.log('✓ Script element appended');
+                };
+
+                // Append script
+                console.log('Appending script to document head...');
+                document.head.appendChild(script);
+                console.log('✓ Script element appended');
+            })
+            .catch(function(error) {
+                console.error('═══════════════════════════════════════════════════');
+                console.error('❌ FAILED TO FETCH CONTACT SCRIPT');
+                console.error('═══════════════════════════════════════════════════');
+                console.error('URL:', contactScriptUrl);
+                console.error('Error:', error);
+
+                alert('Error: Could not load form submission module. Please check your connection.');
+                window.isValidating = false;
+                window.validationComplete = false;
+                window.VALIDATION_PASSED = false;
+            });
     }
     
     // SECURITY: Debounced validation wrapper to prevent rapid-fire submissions

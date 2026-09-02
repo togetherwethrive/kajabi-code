@@ -370,8 +370,26 @@
   <!-- jQuery (required for footerAutomation.js) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  <!-- Footer Automation Script -->
-  <script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code@main/footerAutomation.js"></script>
+  <!-- Footer Automation Script - fetched directly from GitHub raw (no CDN, no propagation delay).
+       raw.githubusercontent.com can't be used as a plain <script src> (it serves text/plain with
+       nosniff, which browsers refuse to execute), so this small bootstrap fetches the source and
+       runs it via a Blob instead. -->
+  <script>
+    (function() {
+      var url = 'https://raw.githubusercontent.com/togetherwethrive/kajabi-code/main/footerAutomation.js?cb=' + Date.now();
+      fetch(url, { cache: 'no-store' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        })
+        .then(function(code) {
+          var s = document.createElement('script');
+          s.src = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+          document.head.appendChild(s);
+        })
+        .catch(function(e) { console.error('[Footer Automation] Failed to load:', e); });
+    })();
+  </script>
 
   <!-- Optional: Add your own initialization code here -->
   <script>
