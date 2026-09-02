@@ -22,7 +22,7 @@
         'apiv2.rapidfunnel.com',
         'thrivewithtwtapp.com',
         'kajabi.com',
-        'twtmentorship.com'
+        'twtmentorship.com',
         'medistichealth.com'
     ];
 
