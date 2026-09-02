@@ -66,7 +66,10 @@
 
     console.log('[Next Page Button] Button found');
 
-    const buttonUrl = button.getAttribute('href') || button.getAttribute('data-url');
+    // Prefer data-url over href, since builder widgets default href to "#"
+    // as a placeholder and the real destination is put in data-url.
+    const hrefAttr = button.getAttribute('href');
+    const buttonUrl = (hrefAttr && hrefAttr !== '#') ? hrefAttr : button.getAttribute('data-url');
     if (!buttonUrl) {
       console.warn('[Next Page Button] No href or data-url found');
       return;
