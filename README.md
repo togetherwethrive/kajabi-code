@@ -41,7 +41,7 @@ This library provides twelve core JavaScript modules plus a master loader script
 
 Add this single script tag to load all modules automatically:
 ```html
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/mainCodeInitializer.js"></script>
 ```
 
 The master loader will:
@@ -58,15 +58,15 @@ Load specific modules as needed:
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <!-- Individual modules -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/formValidation.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/contactForm.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/ctaButtonNotification.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/buttonTracking.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/assetDownload.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/footerAutomation.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/multipleVideoTracking.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/videoLocking.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/showButtonOnVideoCompletion.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/formValidation.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/contactForm.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/ctaButtonNotification.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/buttonTracking.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/assetDownload.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/footerAutomation.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/multipleVideoTracking.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/videoLocking.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/showButtonOnVideoCompletion.js"></script>
 ```
 
 ---
@@ -569,10 +569,10 @@ The button is styled with:
 **Integration Example**:
 ```html
 <!-- Automatic with master loader -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/mainCodeInitializer.js"></script>
 
 <!-- Or load individually -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/backButton.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/backButton.js"></script>
 ```
 
 ---
@@ -587,7 +587,7 @@ The button is styled with:
 - Prevents loading conflicts
 - Comprehensive console logging
 - Error handling for failed script loads
-- Uses jsDelivr CDN for reliable delivery
+- Uses Statically CDN for reliable delivery with fast GitHub change propagation
 
 **Scripts Loaded (in order)**:
 1. jQuery 3.7.1 (if not present)
@@ -604,7 +604,7 @@ The button is styled with:
 **Usage**:
 ```html
 <!-- Single line to load everything -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/mainCodeInitializer.js"></script>
 ```
 
 **Console Output**:
@@ -682,7 +682,7 @@ All scripts loaded!
 <html>
 <head>
   <!-- Load master script -->
-  <script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+  <script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/mainCodeInitializer.js"></script>
 </head>
 <body>
 
@@ -798,8 +798,8 @@ All scripts loaded!
 <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 
 <!-- Video Locking & Tracking Scripts -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/multipleVideoTracking.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/videoLocking.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/multipleVideoTracking.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/videoLocking.js"></script>
 
 <!-- Video 1 - Always unlocked -->
 <div class="wistia_embed wistia_async_video1id"
@@ -827,7 +827,7 @@ All scripts loaded!
 <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 
 <!-- Button Display Script -->
-<script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/showButtonOnVideoCompletion.js"></script>
+<script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/showButtonOnVideoCompletion.js"></script>
 
 <!-- Course videos -->
 <div class="wistia_embed wistia_async_lesson1"></div>
@@ -874,7 +874,7 @@ All scripts loaded!
   <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 
   <!-- All Video Scripts via Master Loader -->
-  <script src="https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/mainCodeInitializer.js"></script>
+  <script src="https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/mainCodeInitializer.js"></script>
 
   <!-- Lesson 1 (Always available) -->
   <h2>Lesson 1: Getting Started</h2>
@@ -1738,7 +1738,7 @@ For a complete course platform, use this structure:
 2. **Minimize Console Logs**: In production, consider removing console logs
 3. **localStorage Management**: Clear old progress data periodically
 4. **Wistia Optimization**: Use Wistia's async loading
-5. **CDN Usage**: jsDelivr provides fast, global content delivery
+5. **CDN Usage**: Statically provides fast, global content delivery and picks up GitHub commits much faster than jsDelivr
 
 ### Security Considerations
 

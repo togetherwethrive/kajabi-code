@@ -411,39 +411,6 @@
     console.log('[Back Button] Styles injected');
   }
 
-  // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
-  const ALLOWED_REDIRECT_DOMAINS = [
-    'rapidfunnel.com',
-    'my.rapidfunnel.com',
-    'app.rapidfunnel.com',
-    'apiv2.rapidfunnel.com',
-    'thrivewithtwtapp.com',
-    'kajabi.com',
-    'twtmentorship.com'
-  ];
-
-  // Helper function to validate URL against whitelist
-  function isUrlAllowed(url) {
-    if (!url) return false;
-
-    try {
-      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
-      const hostname = urlObj.hostname;
-
-      const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
-        return hostname === domain || hostname.endsWith('.' + domain);
-      });
-
-      if (!isAllowed) {
-        console.warn('[Back Button] URL blocked - domain not in whitelist:', hostname);
-      }
-      return isAllowed;
-    } catch (e) {
-      console.warn('[Back Button] Invalid URL format:', url);
-      return false;
-    }
-  }
-
   // Helper function to process URL with parameters
   function processUrlWithParams(url) {
     if (!url) return url;
@@ -515,12 +482,10 @@
         // Process URL parameters (replace placeholders)
         backUrl = processUrlWithParams(backUrl);
 
-        if (isUrlAllowed(backUrl)) {
+        if (backUrl) {
           console.log('[Back Button] Navigating to URL from #back-button-url div:', backUrl);
           window.location.href = backUrl;
           return;
-        } else {
-          console.error('[Back Button] URL in div blocked by security policy:', backUrl);
         }
       }
     }
@@ -531,18 +496,16 @@
       // Process URL parameters (replace placeholders)
       bodyBackUrl = processUrlWithParams(bodyBackUrl);
 
-      if (isUrlAllowed(bodyBackUrl)) {
+      if (bodyBackUrl) {
         console.log('[Back Button] Navigating to URL from body attribute:', bodyBackUrl);
         window.location.href = bodyBackUrl;
         return;
-      } else {
-        console.error('[Back Button] body data-back-button-url blocked by security policy:', bodyBackUrl);
       }
     }
 
     // PRIORITY 3: Check for saved referrer from localStorage
     const savedReferrer = BackButtonStorage.getReferrer(resourceId);
-    if (savedReferrer && isUrlAllowed(savedReferrer)) {
+    if (savedReferrer) {
       console.log('[Back Button] Navigating to saved referrer:', savedReferrer);
       window.location.href = savedReferrer;
       return;

@@ -3,16 +3,6 @@
 
   console.log('[Next Page Button] Script loaded');
 
-  const ALLOWED_REDIRECT_DOMAINS = [
-    'rapidfunnel.com',
-    'my.rapidfunnel.com',
-    'app.rapidfunnel.com',
-    'apiv2.rapidfunnel.com',
-    'thrivewithtwtapp.com',
-    'kajabi.com',
-    'twtmentorship.com'
-  ];
-
   const urlParams = new URLSearchParams(window.location.search);
   const resourceIdRaw = urlParams.get('resourceId') || '';
   const userIdRaw = urlParams.get('userId') || '';
@@ -21,17 +11,6 @@
   const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
   const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
   const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : window.location.pathname;
-
-  function isUrlAllowed(url) {
-    if (!url) return false;
-    try {
-      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
-      const hostname = urlObj.hostname;
-      return ALLOWED_REDIRECT_DOMAINS.some(domain => hostname === domain || hostname.endsWith('.' + domain));
-    } catch (e) {
-      return false;
-    }
-  }
 
   function processUrlWithParams(url) {
     if (!url) return url;
@@ -95,11 +74,11 @@
 
     const processedUrl = processUrlWithParams(buttonUrl);
 
-    if (isUrlAllowed(processedUrl)) {
+    if (processedUrl) {
       button.setAttribute('href', processedUrl);
       console.log('[Next Page Button] Parameters injected:', processedUrl);
     } else {
-      console.error('[Next Page Button] URL blocked by security policy');
+      console.error('[Next Page Button] No URL to set');
     }
   }
 

@@ -14,39 +14,16 @@
     
     let isSubmitting = false;
     
-    // Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
-    const ALLOWED_REDIRECT_DOMAINS = [
-        'rapidfunnel.com',
-        'my.rapidfunnel.com',
-        'app.rapidfunnel.com',
-        'apiv2.rapidfunnel.com',
-        'thrivewithtwtapp.com',
-        'kajabi.com',
-        'twtmentorship.com'
-        'medistichealth.com'
-    ];
-
-    // URL validation function with whitelist check
+    // URL validation function - just checks it's a well-formed URL
     function isValidUrl(url) {
         const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/;
         if (!urlPattern.test(url)) {
             return false;
         }
 
-        // Check against whitelist
         try {
-            const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
-            const hostname = urlObj.hostname;
-
-            // Check if hostname matches or is subdomain of allowed domains
-            const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
-                return hostname === domain || hostname.endsWith('.' + domain);
-            });
-
-            if (!isAllowed) {
-                console.warn('Redirect blocked - domain not in whitelist:', hostname);
-            }
-            return isAllowed;
+            new URL(url.startsWith('http') ? url : 'https://' + url);
+            return true;
         } catch (e) {
             console.warn('Invalid URL format:', url);
             return false;

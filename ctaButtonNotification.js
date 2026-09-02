@@ -9,46 +9,9 @@ const userId = userIdRaw.match(/^\d+$/) ? userIdRaw : '';
 const contactId = contactIdRaw.match(/^\d+$/) ? contactIdRaw : '';
 const resourceId = resourceIdRaw.match(/^\d+$/) ? resourceIdRaw : '';
 
-// Allowed redirect domains - SECURITY: Whitelist to prevent open redirects
-const ALLOWED_REDIRECT_DOMAINS = [
-  'rapidfunnel.com',
-  'my.rapidfunnel.com',
-  'app.rapidfunnel.com',
-  'apiv2.rapidfunnel.com',
-  'thrivewithtwtapp.com',
-  'kajabi.com',
-  'twtmentorship.com'
-];
-
-// Helper function to validate URL against whitelist
-function isUrlAllowed(url) {
-  try {
-    const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
-    const hostname = urlObj.hostname;
-
-    const isAllowed = ALLOWED_REDIRECT_DOMAINS.some(domain => {
-      return hostname === domain || hostname.endsWith('.' + domain);
-    });
-
-    if (!isAllowed) {
-      console.warn('[CTA Notification] Redirect blocked - domain not in whitelist:', hostname);
-    }
-    return isAllowed;
-  } catch (e) {
-    console.warn('[CTA Notification] Invalid URL format:', url);
-    return false;
-  }
-}
-
 // Helper function to process URL with parameters
 function processUrlWithParams(url) {
   if (!url) return url;
-
-  // SECURITY: Validate URL against whitelist before processing
-  if (!isUrlAllowed(url)) {
-    console.error('[CTA Notification] URL blocked by security policy:', url);
-    return '#';
-  }
 
   console.log('[CTA Notification] Processing URL:', url);
   console.log('[CTA Notification] Available params - userId:', userId, 'contactId:', contactId, 'resourceId:', resourceId);

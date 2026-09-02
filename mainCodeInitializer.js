@@ -2,8 +2,8 @@
   // jQuery CDN URL
   const jQueryUrl = 'https://code.jquery.com/jquery-3.7.1.min.js';
 
-  // Base URL for all scripts - using jsDelivr CDN which provides proper headers
-  const baseUrl = 'https://cdn.jsdelivr.net/gh/togetherwethrive/kajabi-code@main/';
+  // Base URL for all scripts - using Statically CDN, which picks up GitHub changes much faster than jsDelivr
+  const baseUrl = 'https://cdn.statically.io/gh/togetherwethrive/kajabi-code/main/';
 
   // Array of script filenames to load
   const scripts = [
