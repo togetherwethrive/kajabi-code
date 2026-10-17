@@ -155,7 +155,7 @@
             
             if (!gdprConsent.checked) {
                 isValid = false;
-                errorMessages.push('You must agree to the GDPR and CCPA Terms and Conditions');
+                errorMessages.push('You must agree to the GDPR and CCPA Privacy Policy');
                 if (gdprError) {
                     gdprError.classList.add('show');
                 }
