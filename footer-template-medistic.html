@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footer Automation Example - Medistic Health</title>
+
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Google Fonts (Medistic Health brand fonts) -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* Medistic Health brand colors */
+    :root {
+      --mh-dark: #3e2c31;        /* plum - text and bottom bar */
+      --mh-cream: #f7f1e9;       /* page / footer background */
+      --mh-card: #fffcf8;        /* card background */
+      --mh-border: #e7ded2;      /* soft borders */
+      --mh-terracotta: #c68b76;  /* links and button */
+      --mh-green: #4c7a57;       /* small uppercase labels */
+      --mh-sage: #6e9070;        /* social icons */
+      --mh-sage-light: #c8d6c4;  /* profile image border */
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: var(--mh-dark);
+      background: var(--mh-cream);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Main content area */
+    .main-content {
+      flex: 1;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 500;
+      color: var(--mh-dark);
+      margin-bottom: 10px;
+    }
+
+    .page-header p {
+      color: #6b5a5f;
+      font-size: 1.1rem;
+    }
+
+    /* Footer Styles */
+    .footer {
+      background: var(--mh-cream);
+      color: var(--mh-dark);
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Full-width white section holding profile, contact and actions */
+    .footer-top {
+      background: var(--mh-card);
+      padding: 45px 20px;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+      align-items: center;
+    }
+
+    /* Small uppercase green labels */
+    .footer-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--mh-green);
+      margin-bottom: 12px;
+    }
+
+    .footer-contact,
+    .footer-actions {
+      align-self: start;
+    }
+
+    /* Profile Section - name sits to the right of the image */
+    .footer-profile {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .profile-image-wrapper {
+      flex-shrink: 0;
+    }
+
+    .profile-image-wrapper img {
+      display: block;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--mh-sage-light);
+    }
+
+    .profile-name {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      line-height: 1.25;
+    }
+
+    .profile-name .firstName,
+    .profile-name .lastName {
+      display: inline;
+    }
+
+    /* Contact Section */
+    .contact-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .contact-item a {
+      color: var(--mh-terracotta);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-size: 1.05rem;
+      transition: color 0.2s;
+    }
+
+    .contact-item a:hover {
+      color: var(--mh-dark);
+    }
+
+    .email-block span.fa,
+    .phone-block span.fa {
+      display: none;
+    }
+
+    /* Actions Section */
+    .booking-link-wrapper {
+      margin-bottom: 18px;
+    }
+
+    .footer-btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: var(--mh-terracotta);
+      color: var(--mh-card);
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: 700;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .footer-btn:hover {
+      background: #b5775f;
+      transform: translateY(-2px);
+    }
+
+    .alternate-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--mh-green);
+      margin-top: 12px;
+    }
+
+    /* Social Links */
+    .social-icons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-btn-socials {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: var(--mh-sage);
+      border-radius: 50%;
+      color: var(--mh-card);
+      text-decoration: none;
+      transition: background 0.3s, transform 0.3s;
+      font-size: 1.1rem;
+    }
+
+    .footer-btn-socials:hover {
+      background: var(--mh-green);
+      transform: translateY(-3px);
+    }
+
+    /* Bottom bar - logo on the left, text/links on the right */
+    .footer-bottom-bar {
+      background: var(--mh-dark);
+      color: var(--mh-cream);
+      padding: 45px 20px;
+    }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+      font-size: 0.95rem;
+    }
+
+    .footer-bottom-text {
+      text-align: right;
+    }
+
+    .footer-legal-links {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-bottom: 8px;
+    }
+
+    .footer-legal-links a {
+      color: var(--mh-sage-light);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-legal-links a:hover {
+      color: var(--mh-terracotta);
+      text-decoration: underline;
+    }
+
+    .footer-logo {
+      flex-shrink: 0;
+    }
+
+    .footer-logo img {
+      display: block;
+      height: 60px;
+      width: auto;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 30px;
+      }
+
+      .footer-profile {
+        justify-content: center;
+        text-align: left;
+      }
+
+      .contact-item {
+        justify-content: center;
+      }
+
+      .social-icons {
+        justify-content: center;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .footer-bottom-text {
+        text-align: center;
+      }
+
+      .footer-legal-links {
+        justify-content: center;
+      }
+
+      .footer-logo img {
+        height: 48px;
+      }
+
+      .page-header h1 {
+        font-size: 2rem;
+      }
+    }
+
+    /* Loading State */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .loading::after {
+      content: "Loading...";
+      display: block;
+      color: #6b5a5f;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Footer Automation Example</h1>
+      <p>This page demonstrates the footerAutomation.js functionality</p>
+      <p style="margin-top: 10px; color: #c0392b;">
+        <strong>Note:</strong> Add <code>?userId=YOUR_USER_ID</code> to the URL to load user data
+      </p>
+    </div>
+
+    <div style="background: #fffcf8; border: 1px solid #e7ded2; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+      <h2 style="margin-bottom: 15px; color: #3e2c31; font-family: 'Newsreader', Georgia, serif; font-weight: 500;">How to Use</h2>
+      <ol style="line-height: 2; color: #5a474c; padding-left: 20px;">
+        <li>Add <code>?userId=123</code> to your URL</li>
+        <li>The footer will automatically populate with user data from the API</li>
+        <li>Profile image, name, contact info, and social links will appear</li>
+        <li>Empty fields will be hidden automatically</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="footer-container">
+        <div class="footer-content">
+
+          <!-- Profile Section -->
+          <div class="footer-profile">
+            <div class="profile-image-wrapper">
+              <img id="profileImage"
+                   src="https://rfres.com/assets/img/icon-user-default.png"
+                   alt="Profile Image">
+            </div>
+            <div class="profile-name">
+              <span class="firstName" id="firstName">First Name</span>
+              <span class="lastName" id="lastName">Last Name</span>
+            </div>
+          </div>
+
+          <!-- Contact Section -->
+          <div class="footer-contact">
+            <h3 class="footer-label">Get In Touch</h3>
+
+            <div class="contact-item email-block">
+              <span class="fa fa-envelope fa-lg"></span>
+              <a id="email" href="mailto:email@example.com">email@example.com</a>
+            </div>
+
+            <div class="contact-item phone-block">
+              <span class="fa fa-phone fa-lg"></span>
+              <a id="phoneNumber" href="tel:+1234567890">+1 (234) 567-890</a>
+            </div>
+          </div>
+
+          <!-- Actions Section -->
+          <div class="footer-actions">
+            <h3 class="footer-label">Talk It Through</h3>
+
+            <div class="booking-link-wrapper">
+              <a href="#" id="customBookingLink" class="footer-btn custom_custombookinglink">
+                Book a Call
+                <span></span>
+              </a>
+              <p class="alternate-text">Schedule a conversation</p>
+            </div>
+
+            <!-- Social Links -->
+            <div class="footer-social-links">
+              <h4 class="footer-label">Follow</h4>
+              <div class="social-icons">
+                <a href="#" id="facebookUrl" class="footer-btn-socials" target="_blank" rel="noopener">
+                  <i class="fab fa-facebook-f"></i>
+                  <span></span>
+                </a>
+                <a href="#" id="twitterUrl" class="footer-btn-socials" target="_blank" rel="noopener">
+                  <i class="fab fa-x-twitter"></i>
+                  <span></span>
+                </a>
+                <a href="#" id="linkedinUrl" class="footer-btn-socials" target="_blank" rel="noopener">
+                  <i class="fab fa-linkedin-in"></i>
+                  <span></span>
+                </a>
+                <a href="#" id="instagramUrl" class="footer-btn-socials" target="_blank" rel="noopener">
+                  <i class="fab fa-instagram"></i>
+                  <span></span>
+                </a>
+                <a href="#" id="youtubeUrl" class="footer-btn-socials" target="_blank" rel="noopener">
+                  <i class="fab fa-youtube"></i>
+                  <span></span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Bottom Bar -->
+    <div class="footer-bottom-bar">
+      <div class="footer-container footer-bottom">
+        <div class="footer-logo">
+          <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/sites/16921/images/ffc58d2-a5ed-4ce-375a-db754541c76b_medistic-logo-reversed-1200x400.png"
+               alt="Medistic Health">
+        </div>
+        <div class="footer-bottom-text">
+          <nav class="footer-legal-links" aria-label="Legal">
+            <a href="https://www.medistichealth.com/terms-conditions">Terms &amp; Conditions</a>
+            <a href="https://www.medistichealth.com/privacy-policy">Privacy Policy</a>
+            <a href="https://www.medistichealth.com/earnings-disclaimer">Earnings Disclaimer</a>
+          </nav>
+          <p>&copy; 2026 Medistic Health | Powered by Medistic Health</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery (required for footerAutomation.js) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <!-- Footer Automation Script - fetched directly from GitHub raw (no CDN, no propagation delay).
+       raw.githubusercontent.com can't be used as a plain <script src> (it serves text/plain with
+       nosniff, which browsers refuse to execute), so this small bootstrap fetches the source and
+       runs it via a Blob instead. -->
+  <script>
+    (function() {
+      var url = 'https://raw.githubusercontent.com/togetherwethrive/kajabi-code/main/footerAutomation.js?cb=' + Date.now();
+      fetch(url, { cache: 'no-store' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        })
+        .then(function(code) {
+          var s = document.createElement('script');
+          s.src = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+          document.head.appendChild(s);
+        })
+        .catch(function(e) { console.error('[Footer Automation] Failed to load:', e); });
+    })();
+  </script>
+
+  <!-- Optional: Add your own initialization code here -->
+  <script>
+    // Listen for the customBookingLinkUpdated event
+    $(document).on('customBookingLinkUpdated', function() {
+      console.log('Custom booking link has been updated!');
+      // You can add custom logic here after the booking link is ready
+    });
+
+    // Optional: Show loading state while data loads
+    $(document).ready(function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('userId')) {
+        $('.footer-profile').addClass('loading');
+
+        // Remove loading state after a delay
+        setTimeout(function() {
+          $('.footer-profile').removeClass('loading');
+        }, 2000);
+      }
+    });
+  </script>
+
+</body>
+</html>
