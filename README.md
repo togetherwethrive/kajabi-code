@@ -163,6 +163,8 @@ at it gets refused by the browser - this fetches the source and runs it via a Bl
 3. Contact created via API
 4. User redirected with `userId`, `resourceId`, `contactId` parameters
 
+**Autofill**: If the page URL contains a numeric `contactId` (e.g. `?userId=123&contactId=456`), `formValidation.js` fetches that contact from `https://apiv2.rapidfunnel.com/v2/contact-details/{contactId}` on page load and prefills first name, last name, email and phone. It only fills empty fields, so it never overwrites what the user typed.
+
 ---
 
 ### 3. CTA Button Notification (`ctaButtonNotification.js`)

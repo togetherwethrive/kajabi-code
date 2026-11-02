@@ -343,6 +343,54 @@
         }, DEBOUNCE_DELAY);
     }
 
+    // If the URL has a contactId, prefill the form with that contact's details.
+    // Only fills fields that are still empty so we never overwrite what the user typed.
+    function autofillContactFromUrl() {
+        if (!document.getElementById('contactForm')) return;
+
+        const contactIdRaw = new URL(window.location.href).searchParams.get('contactId') || '';
+        // SECURITY: numeric IDs only
+        const contactId = /^\d+$/.test(contactIdRaw) ? contactIdRaw : '';
+        if (!contactId) return;
+
+        console.log('[Autofill] contactId found in URL, fetching contact details:', contactId);
+
+        jQuery.ajax({
+            url: 'https://apiv2.rapidfunnel.com/v2/contact-details/' + contactId,
+            type: 'GET',
+            dataType: 'json',
+            timeout: 5000,
+            success: function(response) {
+                const data = response && response.data;
+                if (!data) {
+                    console.warn('[Autofill] No contact data in response');
+                    return;
+                }
+
+                const fields = {
+                    contactFirstName: data.firstName,
+                    contactLastName: data.lastName,
+                    contactEmail: data.email,
+                    contactPhone: data.phone
+                };
+
+                Object.keys(fields).forEach(function(id) {
+                    const input = document.getElementById(id);
+                    const value = fields[id];
+                    // .value assignment is plain text, so no XSS risk
+                    if (input && !input.value.trim() && value) {
+                        input.value = String(value).trim();
+                    }
+                });
+
+                console.log('[Autofill] ✓ Contact form prefilled');
+            },
+            error: function(xhr, status, error) {
+                console.warn('[Autofill] Failed to fetch contact details:', status, error);
+            }
+        });
+    }
+
     // Initialize - CAPTURE EVERYTHING
     jQuery(function($) {
         console.log('═══════════════════════════════════════════════════');
@@ -390,6 +438,8 @@
                 return false;
             }, true); // Use capture phase
         }
+
+        autofillContactFromUrl();
 
         console.log('✓ All event listeners attached (jQuery + Native) with debouncing');
         console.log('✓ AJAX interceptor active');
